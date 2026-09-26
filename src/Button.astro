@@ -1,37 +1,29 @@
 ---
 // Button: one button-styled link (.button in scss/base/_buttons.scss), from an ACF link field.
-// Styles: solid (the main action), outline, text (a plain link). Arrows are automatic: a text
-// link gets →, a link to another website or one that opens in a new tab gets ↗ (on any style).
+// Styles: solid (the main action), outline, text (a plain link). Arrows are automatic (ButtonIcon.astro).
 // Renders nothing if the link is empty. Links to the CMS's own pages become site links.
 // Usually rendered by ButtonRow.astro from a component's buttons field (rs_buttons in WordPress).
+import ButtonIcon from './ButtonIcon.astro';
+import NewTabNote from './NewTabNote.astro';
 import { linkTarget } from './html';
+import type { WpLink } from './settings';
 
 export type ButtonStyle = 'solid' | 'outline' | 'text';
 
 interface Props {
-  link: { title: string | null; url: string | null; target: string | null } | null | undefined;
+  link: WpLink | undefined;
   style?: ButtonStyle;
   cmsUrl?: string;
 }
 
 const { link, style = 'solid', cmsUrl } = Astro.props;
-const { href, newTab, external } = linkTarget(link, cmsUrl, Astro.site);
-const icon = newTab || external ? 'out' : style === 'text' ? 'next' : null;
+const { href, newTab, external, attrs } = linkTarget(link, cmsUrl, Astro.site);
 ---
 
 {href && (
-  <a
-    class:list={['button', style !== 'solid' && `button--${style}`]}
-    href={href}
-    target={newTab ? '_blank' : undefined}
-    rel={newTab ? 'noopener' : undefined}
-  >
+  <a class:list={['button', style !== 'solid' && `button--${style}`]} {...attrs}>
     <span>{link?.title || href}</span>
-    {newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
-    {icon && (
-      <svg class:list={['button__icon', `button__icon--${icon}`]} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-        <path d={icon === 'next' ? 'M2 8h11M9 4l4 4-4 4' : 'M4 12 12 4M5.5 4H12v6.5'} />
-      </svg>
-    )}
+    <NewTabNote show={newTab} />
+    <ButtonIcon style={style} newTab={newTab} external={external} />
   </a>
 )}

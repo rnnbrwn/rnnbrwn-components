@@ -3,11 +3,11 @@
 // WordPress half: rnnbrwn-base/sections/components/buttons.php
 // Other components show buttons with ButtonRow.astro directly, from their own rs_buttons field.
 import Section from '../Section.astro';
-import ButtonRow, { type ButtonsField } from '../ButtonRow.astro';
-import { choice, type SectionSettings } from '../settings';
+import ButtonRow from '../ButtonRow.astro';
+import { choice, type ButtonsField, type Choice, type SectionSettings } from '../settings';
 
 interface Props {
-  section: SectionSettings & { buttonsButtons: ButtonsField; alignment: string[] | null };
+  section: SectionSettings & { buttonsButtons: ButtonsField; alignment: Choice };
   cmsUrl?: string;
 }
 

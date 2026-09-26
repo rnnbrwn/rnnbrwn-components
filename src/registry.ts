@@ -7,9 +7,7 @@ import Hero from './components/Hero.astro';
 import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
 import RichText from './components/RichText.astro';
-import { BUTTONS_FIELDS } from './settings';
-
-const IMAGE = '{ node { sourceUrl srcSet altText mediaDetails { width height } } }';
+import { BUTTONS_FIELDS, IMAGE_FIELDS as IMAGE, LINK_FIELDS as LINK } from './settings';
 
 export const components = {
   hero: {
@@ -19,7 +17,7 @@ export const components = {
   rich_text: { component: RichText, fields: 'heading body' },
   card_grid: {
     component: CardGrid,
-    fields: `eyebrow heading intro cardGridCards { image ${IMAGE} eyebrow heading text link { title url target } } cardGridButtons ${BUTTONS_FIELDS} columns lastCard cardStyle`,
+    fields: `eyebrow heading intro cardGridCards { image ${IMAGE} eyebrow heading text link ${LINK} } cardGridButtons ${BUTTONS_FIELDS} columns lastCard cardStyle`,
   },
   media_text: {
     component: MediaText,

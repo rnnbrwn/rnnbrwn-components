@@ -53,15 +53,25 @@ if ( ! $example_page ) {
 	update_field( 'field_rs_page_surface', 'light', $example_id );
 }
 
+// ---------- Section helpers ----------
+
+// One section: its layout, its own fields, the shared Settings tab's defaults (or the layout's
+// own, in $fields), then this row's changes ($settings).
+$section = fn( $layout, $fields, $settings = [] ) => array_merge(
+	[ 'acf_fc_layout' => $layout, 'width' => 'content', 'spacing' => 'm', 'background' => 'page', 'anchor' => '' ],
+	$fields,
+	$settings
+);
+
+// A link field's value. Paths ("/contact/") become addresses on the CMS, as the link box saves them.
+$link   = fn( $title, $url = '/contact/', $target = '' ) => [ 'title' => $title, 'url' => str_starts_with( $url, '/' ) ? home_url( $url ) : $url, 'target' => $target ];
+// One row of a buttons field (rs_buttons).
+$button = fn( $title, $style, $url = '/contact/', $target = '' ) => [ 'link' => $link( $title, $url, $target ), 'style' => $style ];
+
 // ---------- Placeholder: every width, background and spacing option of the shared settings ----------
-$placeholder = fn( $heading, $settings, $note = '' ) => array_merge( [
-	'acf_fc_layout' => 'placeholder',
-	'heading'       => $heading,
-	'note'          => $note,
-	'width'         => 'content',
-	'spacing'       => 'm',
-	'background'    => 'page',
-	'anchor'        => '',
+$placeholder = fn( $heading, $settings, $note = '' ) => $section( 'placeholder', [
+	'heading' => $heading,
+	'note'    => $note,
 ], $settings );
 
 // ---------- Navigation (site-wide: wp-admin → Navigation) ----------
@@ -165,26 +175,21 @@ if ( ! $photo_id || ! get_post( $photo_id ) ) {
 	update_option( 'rs_test_hero_photo_id', $photo_id );
 }
 
-$hero = fn( $heading, $settings = [] ) => array_merge( [
-	'acf_fc_layout'     => 'hero',
+$hero = fn( $heading, $settings = [] ) => $section( 'hero', [
 	'variant'           => 'centred',
 	'eyebrow'           => 'Eyebrow label',
 	'heading'           => $heading,
 	'intro'             => 'An intro of a sentence or two, saying what the page is about and what to do next.',
 	'hero_buttons'      => [
-		[ 'link' => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ], 'style' => 'solid' ],
-		[ 'link' => [ 'title' => 'Second button', 'url' => home_url( '/components/placeholder/#surfaces' ), 'target' => '' ], 'style' => 'outline' ],
-		[ 'link' => [ 'title' => 'Text link', 'url' => home_url( '/components/buttons/' ), 'target' => '' ], 'style' => 'text' ],
+		$button( 'Main button', 'solid' ),
+		$button( 'Second button', 'outline', '/components/placeholder/#surfaces' ),
+		$button( 'Text link', 'text', '/components/buttons/' ),
 	],
 	'height'            => 'standard',
 	'image'             => '',
 	'focus'             => 'center',
 	'image_informative' => 0,
 	'alignment'         => 'left',
-	'width'             => 'content',
-	'spacing'           => 'm',
-	'background'        => 'page',
-	'anchor'            => '',
 ], $settings );
 // The photo Heroes use a real photo: the media-library image titled "eugene" when there is one
 // (uploaded locally for testing), otherwise the test pattern. The last Hero always uses the
@@ -202,8 +207,8 @@ $sections_hero = [
 	$hero( 'Hero: background image, tall, centred, on Dark', $photo + [ 'height' => 'tall', 'alignment' => 'centre', 'background' => 'dark', 'focus' => 'top' ] ),
 	$hero( 'Hero: background image on Accent, described photo', $photo + [ 'background' => 'accent', 'image_informative' => 1 ] ),
 	$hero( 'Hero: background image, wide, on Subtle', array_merge( $photo, [ 'width' => 'wide', 'background' => 'subtle', 'hero_buttons' => [
-		[ 'link' => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ], 'style' => 'solid' ],
-		[ 'link' => [ 'title' => 'Other site', 'url' => 'https://example.com', 'target' => '_blank' ], 'style' => 'outline' ],
+		$button( 'Main button', 'solid' ),
+		$button( 'Other site', 'outline', 'https://example.com', '_blank' ),
 	] ] ) ),
 	$hero( 'Hero: contrast test pattern (worst case)', $pattern ),
 ];
@@ -211,18 +216,10 @@ $sections_hero = [
 // ---------- Buttons ----------
 // No headings in this component, so the button labels say what each row is testing.
 
-$button  = fn( $title, $style, $url = '/contact/', $target = '' ) => [
-	'link'  => [ 'title' => $title, 'url' => str_starts_with( $url, '/' ) ? home_url( $url ) : $url, 'target' => $target ],
-	'style' => $style,
-];
-$buttons = fn( $row, $settings = [] ) => array_merge( [
-	'acf_fc_layout'   => 'buttons',
+$buttons = fn( $row, $settings = [] ) => $section( 'buttons', [
 	'buttons_buttons' => $row,
 	'alignment'       => 'left',
-	'width'           => 'content',
 	'spacing'         => 's',
-	'background'      => 'page',
-	'anchor'          => '',
 ], $settings );
 $every = fn( $where ) => [ $button( "Solid $where", 'solid' ), $button( "Outline $where", 'outline' ), $button( "Text link $where", 'text' ) ];
 
@@ -248,14 +245,9 @@ $sections_buttons = [
 
 // ---------- Rich Text ----------
 
-$rich_text = fn( $heading, $body, $settings = [] ) => array_merge( [
-	'acf_fc_layout' => 'rich_text',
-	'heading'       => $heading,
-	'body'          => $body,
-	'width'         => 'content',
-	'spacing'       => 'm',
-	'background'    => 'page',
-	'anchor'        => '',
+$rich_text = fn( $heading, $body, $settings = [] ) => $section( 'rich_text', [
+	'heading' => $heading,
+	'body'    => $body,
 ], $settings );
 
 // Written the way the Classic Editor saves text: paragraphs separated by blank lines.
@@ -315,7 +307,6 @@ $card  = fn( $heading, $extra = [] ) => array_merge( [
 	'text'    => 'A sentence or two about this card, long enough to wrap onto a few lines.',
 	'link'    => '',
 ], $extra );
-$link  = fn( $title, $url = '/contact/', $target = '' ) => [ 'title' => $title, 'url' => str_starts_with( $url, '/' ) ? home_url( $url ) : $url, 'target' => $target ];
 $cards = [
 	$card( 'Linked, with link text', [ 'image' => $card_images[0], 'eyebrow' => 'Eyebrow', 'link' => $link( 'Read more' ) ] ),
 	$card( 'Linked, arrow only', [ 'image' => $card_images[1], 'eyebrow' => 'Tall image', 'link' => $link( '', '/components/hero/' ) ] ),
@@ -330,8 +321,7 @@ $text_cards = [
 	$card( 'Text only, no link', [ 'eyebrow' => 'Three' ] ),
 	$card( 'A fourth card, alone on its row', [ 'eyebrow' => 'Four', 'text' => 'The last row isn\'t stretched: the card keeps its column\'s width.', 'link' => $link( 'Read more' ) ] ),
 ];
-$card_grid = fn( $heading, $settings = [] ) => array_merge( [
-	'acf_fc_layout'     => 'card_grid',
+$card_grid = fn( $heading, $settings = [] ) => $section( 'card_grid', [
 	'eyebrow'           => 'Section eyebrow',
 	'heading'           => $heading,
 	'intro'             => 'An optional intro under the heading, saying what the cards are.',
@@ -340,10 +330,6 @@ $card_grid = fn( $heading, $settings = [] ) => array_merge( [
 	'columns'           => '3',
 	'last_card'         => 'column',
 	'card_style'        => 'panel',
-	'width'             => 'content',
-	'spacing'           => 'm',
-	'background'        => 'page',
-	'anchor'            => '',
 ], $settings );
 
 $sections_card_grid = [
@@ -372,8 +358,7 @@ $media_body = '<p>A paragraph or two beside the image, with <a href="' . home_ur
  	<li>A short list</li>
  	<li>Of a few points</li>
 </ul>';
-$media_text = fn( $heading, $settings = [] ) => array_merge( [
-	'acf_fc_layout'      => 'media_text',
+$media_text = fn( $heading, $settings = [] ) => $section( 'media_text', [
 	'image'              => $wide_image,
 	'eyebrow'            => 'Section eyebrow',
 	'heading'            => $heading,
@@ -384,10 +369,6 @@ $media_text = fn( $heading, $settings = [] ) => array_merge( [
 	'focus'              => 'center',
 	'split'              => 'half',
 	'text_alignment'     => 'middle',
-	'width'              => 'content',
-	'spacing'            => 'm',
-	'background'         => 'page',
-	'anchor'             => '',
 ], $settings );
 $long_body = $media_body . '
 
@@ -409,7 +390,7 @@ $sections_media_text = [
 	$media_text( '', [ 'eyebrow' => '', 'body' => '<p>No eyebrow, heading or buttons: just text beside the image.</p>', 'media_text_buttons' => [], 'image_side' => 'right' ] ),
 ];
 
-$sections = [
+$sections_placeholder = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
 	$placeholder( 'Width: wide', [ 'width' => 'wide' ] ),
@@ -441,7 +422,7 @@ $rows = [
 	'card_grid'   => $sections_card_grid,
 	'media_text'  => $sections_media_text,
 	'buttons'     => $sections_buttons,
-	'placeholder' => $sections,
+	'placeholder' => $sections_placeholder,
 ];
 foreach ( $rows as $name => $sections_for_page ) {
 	update_field( 'field_rs_sections', $sections_for_page, $component_pages[ $name ] );

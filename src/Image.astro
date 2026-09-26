@@ -1,0 +1,31 @@
+---
+// An image from an ACF image field (fetched with IMAGE_FIELDS), with the Media Library's sizes
+// for the browser to choose from. Loads lazily unless `eager` (the first thing on the page).
+// The alt text is the Media Library's (empty = decorative) unless `alt` is given. Any other
+// attributes (e.g. a class) go on the <img>, and so does the component's style scope, so its
+// scoped styles reach the image.
+import type { WpImageNode } from './settings';
+
+interface Props {
+  image: WpImageNode;
+  sizes: string;
+  alt?: string;
+  eager?: boolean;
+  [attr: string]: any;
+}
+
+const { image, sizes, alt = image.altText ?? '', eager = false, ...attrs } = Astro.props;
+const loading = eager ? ({ loading: 'eager', fetchpriority: 'high' } as const) : ({ loading: 'lazy' } as const);
+---
+
+<img
+  {...attrs}
+  src={image.sourceUrl}
+  srcset={image.srcSet ?? undefined}
+  sizes={sizes}
+  width={image.mediaDetails?.width}
+  height={image.mediaDetails?.height}
+  alt={alt}
+  decoding="async"
+  {...loading}
+/>

@@ -31,8 +31,10 @@ export function editorHtml(html: string | null | undefined, cmsUrl?: string, sit
 
 /**
  * Where a WordPress link field goes, for anything rendered as a link: the site address, whether
- * it opens in a new tab, and whether it's another website (a full address that isn't the CMS,
- * whose uploaded files count as the site's own). Used by Button.astro and Card Grid's cards.
+ * it opens in a new tab, whether it's another website (a full address that isn't the CMS, whose
+ * uploaded files count as the site's own), and the <a> attributes to spread on the link
+ * (href, and target/rel for a new tab; pair them with NewTabNote.astro). Used by Button.astro,
+ * Card Grid's cards and Navigation.astro.
  */
 export function linkTarget(
   link: { url: string | null; target: string | null } | null | undefined,
@@ -42,5 +44,6 @@ export function linkTarget(
   const href = siteLink(link?.url, cmsUrl, siteUrl);
   const newTab = link?.target === '_blank';
   const external = /^https?:\/\//.test(href) && (!cmsUrl || new URL(href).origin !== new URL(cmsUrl).origin);
-  return { href, newTab, external };
+  const attrs = { href, target: newTab ? ('_blank' as const) : undefined, rel: newTab ? 'noopener' : undefined };
+  return { href, newTab, external, attrs };
 }

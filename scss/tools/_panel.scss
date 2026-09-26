@@ -1,0 +1,13 @@
+// The area a painted panel covers: behind its element (which needs position: relative or a grid
+// placement, and isolation: isolate), out into the gutter sideways (no further, or it would run
+// off the screen on phones) and pulled in slightly top and bottom (never more than half the
+// section's spacing, so it can't cut into the content). Used by section panels
+// (base/_surfaces.scss) and Hero's background photo, so the two always match.
+//   .x::before { content: ''; @include panel-area; background-color: var(--color-bg); }
+@mixin panel-area {
+  position: absolute;
+  z-index: -1;
+  inset-block: min(var(--space-2xs), var(--section-space, var(--space-2xl)) / 2);
+  inset-inline: calc(var(--gutter) * -1);
+  border-radius: var(--radius-l);
+}

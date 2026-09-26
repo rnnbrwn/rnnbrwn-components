@@ -26,6 +26,13 @@ p, li { max-width: var(--measure); text-wrap: pretty; }
 
 img, svg, video { display: block; max-width: 100%; height: auto; }
 
+// Which part of a cropped image to keep in view: data-focus on the image's wrapper, from a
+// component's "Keep in view" setting (Hero, Media Text). The middle is the default.
+[data-focus='top'] img { object-position: 50% 0%; }
+[data-focus='bottom'] img { object-position: 50% 100%; }
+[data-focus='left'] img { object-position: 0% 50%; }
+[data-focus='right'] img { object-position: 100% 50%; }
+
 a { color: inherit; }
 
 // A clear outline around whatever has keyboard focus, in every surface's accent.

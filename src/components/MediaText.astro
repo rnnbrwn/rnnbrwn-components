@@ -10,24 +10,23 @@
 // The text comes first in the page (heading before image for screen readers); the image is
 // placed with the grid. Its alt text comes from the Media Library, empty = decorative.
 import Section from '../Section.astro';
-import ButtonRow, { type ButtonsField } from '../ButtonRow.astro';
+import ButtonRow from '../ButtonRow.astro';
+import Image from '../Image.astro';
 import { editorHtml } from '../html';
-import { choice, contentLane, LANE_REM, type SectionSettings } from '../settings';
+import { choice, laneSizes, type ButtonsField, type Choice, type SectionSettings, type WpImage } from '../settings';
 
 interface Props {
   section: SectionSettings & {
-    image: {
-      node: { sourceUrl: string; srcSet: string | null; altText: string | null; mediaDetails: { width: number; height: number } | null };
-    } | null;
+    image: WpImage;
     eyebrow: string | null;
     heading: string | null;
     body: string | null;
     mediaTextButtons: ButtonsField;
-    imageSide: string[] | null;
-    imageShape: string[] | null;
-    focus: string[] | null;
-    split: string[] | null;
-    textAlignment: string[] | null;
+    imageSide: Choice;
+    imageShape: Choice;
+    focus: Choice;
+    split: Choice;
+    textAlignment: Choice;
   };
   cmsUrl?: string;
 }
@@ -43,9 +42,8 @@ const align = choice(section.textAlignment, 'middle');
 
 // Which image size the browser should pick: its share of the section's lane, or the whole
 // screen when stacked on phones.
-const lane = LANE_REM[contentLane(section)];
 const share = { half: 0.5, image_wider: 0.6, text_wider: 0.4 }[split] ?? 0.5;
-const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, 100vw`;
+const sizes = laneSizes(section, share);
 ---
 
 <Section
@@ -56,7 +54,7 @@ const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, 100vw`;
     <div class="media-text__grid">
       {(section.eyebrow || section.heading || body || section.mediaTextButtons?.length) && (
         <div class="media-text__content">
-          {section.eyebrow && <p class="media-text__eyebrow">{section.eyebrow}</p>}
+          {section.eyebrow && <p class="eyebrow media-text__eyebrow">{section.eyebrow}</p>}
           {section.heading && <h2 class="media-text__heading">{section.heading}</h2>}
           {body && <div class="prose" set:html={body} />}
           <ButtonRow buttons={section.mediaTextButtons} cmsUrl={cmsUrl} class="media-text__buttons" />
@@ -65,16 +63,7 @@ const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, 100vw`;
 
       {image && (
         <div class="media-text__media" data-shape={shape} data-focus={choice(section.focus, 'center')}>
-          <img
-            src={image.sourceUrl}
-            srcset={image.srcSet ?? undefined}
-            sizes={sizes}
-            width={image.mediaDetails?.width}
-            height={image.mediaDetails?.height}
-            alt={image.altText ?? ''}
-            loading="lazy"
-            decoding="async"
-          />
+          <Image image={image} sizes={sizes} />
         </div>
       )}
     </div>
@@ -145,20 +134,12 @@ const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, 100vw`;
     min-inline-size: 0;
   }
 
-  // Like Hero's and Card Grid's: a short muted label above the heading.
-  .media-text__eyebrow {
-    color: var(--color-muted);
-    font-size: var(--step-0);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
   .media-text__content > :global(.media-text__buttons) {
     margin-block-start: var(--space-2xs);
   }
 
   // ---------- The image ----------
+  // Its keep-in-view point (data-focus) is in scss/base/_base.scss.
   .media-text__media img {
     display: block;
     inline-size: 100%;
@@ -173,9 +154,4 @@ const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, 100vw`;
   .media-text__media[data-shape='landscape'] img { aspect-ratio: 3 / 2; }
   .media-text__media[data-shape='square'] img { aspect-ratio: 1; }
   .media-text__media[data-shape='portrait'] img { aspect-ratio: 4 / 5; }
-
-  .media-text__media[data-focus='top'] img { object-position: 50% 0%; }
-  .media-text__media[data-focus='bottom'] img { object-position: 50% 100%; }
-  .media-text__media[data-focus='left'] img { object-position: 0% 50%; }
-  .media-text__media[data-focus='right'] img { object-position: 100% 50%; }
 </style>

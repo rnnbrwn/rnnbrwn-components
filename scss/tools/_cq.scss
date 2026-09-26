@@ -10,7 +10,10 @@
   @if meta.type-of($from) != number and not map.has-key(s.$containers, $from) {
     @error 'Unknown container size `#{$from}`. Use one of: #{map.keys(s.$containers)}, or a length';
   }
-  $size: if(meta.type-of($from) == number, $from, map.get(s.$containers, $from));
+  $size: $from;
+  @if meta.type-of($from) != number {
+    $size: map.get(s.$containers, $from);
+  }
   @if $name {
     @container #{$name} (min-width: #{$size}) { @content; }
   } @else {

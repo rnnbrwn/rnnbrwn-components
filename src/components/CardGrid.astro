@@ -12,20 +12,19 @@
 // A Panel card's fill is only painted, reaching out around the card like a section panel, so
 // Panel and Plain cards are exactly the same size and line up with the section's heading.
 import Section from '../Section.astro';
-import ButtonRow, { type ButtonsField } from '../ButtonRow.astro';
+import ButtonRow from '../ButtonRow.astro';
+import ButtonIcon from '../ButtonIcon.astro';
+import Image from '../Image.astro';
+import NewTabNote from '../NewTabNote.astro';
 import { linkTarget } from '../html';
-import { choice, contentLane, LANE_REM, type SectionSettings } from '../settings';
-
-type Link = { title: string | null; url: string | null; target: string | null } | null;
+import { choice, laneSizes, type ButtonsField, type Choice, type SectionSettings, type WpImage, type WpLink } from '../settings';
 
 interface Card {
-  image: {
-    node: { sourceUrl: string; srcSet: string | null; altText: string | null; mediaDetails: { width: number; height: number } | null };
-  } | null;
+  image: WpImage;
   eyebrow: string | null;
   heading: string | null;
   text: string | null;
-  link: Link;
+  link: WpLink;
 }
 
 interface Props {
@@ -35,9 +34,9 @@ interface Props {
     intro: string | null;
     cardGridCards: Card[] | null;
     cardGridButtons: ButtonsField;
-    columns: string[] | null;
-    cardStyle: string[] | null;
-    lastCard: string[] | null;
+    columns: Choice;
+    cardStyle: Choice;
+    lastCard: Choice;
   };
   cmsUrl?: string;
 }
@@ -52,17 +51,16 @@ const cards = (section.cardGridCards ?? []).filter((card) => card?.heading);
 
 // Which image size the browser should pick: a share of the section's lane, or the whole
 // screen on phones (one column).
-const lane = LANE_REM[contentLane(section)];
-const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane / columns)}rem, (min-width: 30rem) 50vw, 100vw`;
+const sizes = laneSizes(section, 1 / columns, '(min-width: 30rem) 50vw, 100vw');
 // A last card that fills its row can be the whole lane wide.
-const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;
+const fillSizes = laneSizes(section);
 ---
 
 <Section section={section} class:list={['card-grid', `card-grid--${look}`, `card-grid--max-${columns}`, fill && 'card-grid--fill']}>
   <div class="card-grid__inner">
     {(section.eyebrow || section.heading || section.intro) && (
       <div class="card-grid__header">
-        {section.eyebrow && <p class="card-grid__eyebrow">{section.eyebrow}</p>}
+        {section.eyebrow && <p class="eyebrow card-grid__eyebrow">{section.eyebrow}</p>}
         {section.heading && <h2 class="card-grid__heading">{section.heading}</h2>}
         {section.intro && <p class="card-grid__intro">{section.intro}</p>}
       </div>
@@ -71,46 +69,27 @@ const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;
     {cards.length > 0 && (
       <ul class="card-grid__cards" role="list">
         {cards.map((card, index) => {
-          const { href, newTab, external } = linkTarget(card.link, cmsUrl, Astro.site);
+          const { href, newTab, external, attrs } = linkTarget(card.link, cmsUrl, Astro.site);
           const image = card.image?.node;
           return (
             <li class:list={['card', href && 'card--link']}>
               <CardHeading class="card__heading">
                 {href ? (
-                  <a
-                    class="card__link"
-                    href={href}
-                    target={newTab ? '_blank' : undefined}
-                    rel={newTab ? 'noopener' : undefined}
-                  >
+                  <a class="card__link" {...attrs}>
                     {card.heading}
-                    {newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
+                    <NewTabNote show={newTab} />
                   </a>
                 ) : (
                   card.heading
                 )}
               </CardHeading>
-              {card.eyebrow && <p class="card__eyebrow">{card.eyebrow}</p>}
-              {image && (
-                <img
-                  class="card__image"
-                  src={image.sourceUrl}
-                  srcset={image.srcSet ?? undefined}
-                  sizes={fill && index === cards.length - 1 ? fillSizes : sizes}
-                  width={image.mediaDetails?.width}
-                  height={image.mediaDetails?.height}
-                  alt={image.altText ?? ''}
-                  loading="lazy"
-                  decoding="async"
-                />
-              )}
+              {card.eyebrow && <p class="eyebrow card__eyebrow">{card.eyebrow}</p>}
+              {image && <Image class="card__image" image={image} sizes={fill && index === cards.length - 1 ? fillSizes : sizes} />}
               {card.text && <p class="card__text">{card.text}</p>}
               {href && (
                 <span class="button button--text card__more" aria-hidden="true">
                   {card.link?.title && <span>{card.link.title}</span>}
-                  <svg class:list={['button__icon', `button__icon--${newTab || external ? 'out' : 'next'}`]} viewBox="0 0 16 16" focusable="false">
-                    <path d={newTab || external ? 'M4 12 12 4M5.5 4H12v6.5' : 'M2 8h11M9 4l4 4-4 4'} />
-                  </svg>
+                  <ButtonIcon style="text" newTab={newTab} external={external} />
                 </span>
               )}
             </li>
@@ -142,19 +121,6 @@ const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;
     display: flex;
     flex-direction: column;
     gap: var(--space-s);
-  }
-
-  // Eyebrows (the section's, like Hero's, and each card's smaller one): a short muted label.
-  .card-grid__eyebrow,
-  .card__eyebrow {
-    color: var(--color-muted);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .card-grid__eyebrow {
-    font-size: var(--step-0);
   }
 
   .card-grid__heading {
@@ -237,6 +203,7 @@ const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;
     border-radius: var(--radius-s);
   }
 
+  // Smaller than the section's eyebrow (.eyebrow, scss/base/_text.scss).
   .card__eyebrow {
     font-size: var(--step--1);
   }

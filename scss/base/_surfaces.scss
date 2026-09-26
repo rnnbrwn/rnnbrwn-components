@@ -9,36 +9,51 @@
 // Each one redefines the colour roles for everything inside it, so components only ever
 // use the roles (--color-bg, --color-text, --color-accent, ...) and work on any surface.
 @use 'sass:list';
+@use '../tools' as *;
 
 $surfaces: (light, subtle, accent, dark);
+
+// Selectors: every surface class, and every surface class but one.
+@function classes($except: null) {
+  $list: ();
+  @each $surface in $surfaces {
+    @if $surface != $except {
+      $list: list.append($list, '.surface-#{$surface}', $separator: comma);
+    }
+  }
+  @return $list;
+}
+
+// What most surfaces share; each surface below changes only what differs. Declared on every
+// surface (not left to inherit), so a surface inside another (a Light panel on a Dark page)
+// gets its own values back.
+//   --muted-strength  how much of the text colour muted text keeps
+//   --tint-strength   how much of the surface colour covers a photo that has text on it
+//                     (e.g. a Hero's background image), so the text stays readable over any photo
+//   --color-shadow, --shadow-strength  the colour and strength of --shadow-raised
+:root,
+#{classes()} {
+  --color-text: var(--brand-dark);
+  --color-accent: var(--brand-accent);
+  --color-on-accent: var(--brand-on-accent);
+  --muted-strength: 70%;
+  --tint-strength: 80%;
+  --color-shadow: var(--brand-dark);
+  --shadow-strength: 1;
+}
 
 :root,
 .surface-light {
   --color-bg: var(--brand-light);
-  --color-text: var(--brand-dark);
-  --color-accent: var(--brand-accent);
-  --color-on-accent: var(--brand-on-accent);
-  --muted-strength: 70%;
-  --tint-strength: 80%;
-  --color-shadow: var(--brand-dark);
 }
 
 .surface-subtle {
   --color-bg: var(--brand-subtle);
-  --color-text: var(--brand-dark);
-  --color-accent: var(--brand-accent);
-  --color-on-accent: var(--brand-on-accent);
-  --muted-strength: 70%;
-  --tint-strength: 80%;
-  --color-shadow: var(--brand-dark);
 }
 
 // On a mid-tone accent even the full text colour only just passes the 4.5:1 contrast
 // minimum, so muted text isn't dimmed at all here (labels rely on size and weight instead),
 // and photos behind text are tinted more strongly.
-//
-// --tint-strength: how much of the surface colour covers a photo that has text on it
-// (e.g. a Hero's background image), so the text stays readable over any photo.
 .surface-accent {
   --color-bg: var(--brand-accent);
   --color-text: var(--brand-on-accent);
@@ -46,7 +61,6 @@ $surfaces: (light, subtle, accent, dark);
   --color-on-accent: var(--brand-accent);
   --muted-strength: 100%;
   --tint-strength: 90%;
-  --color-shadow: var(--brand-dark);
 }
 
 .surface-dark {
@@ -54,8 +68,6 @@ $surfaces: (light, subtle, accent, dark);
   --color-text: var(--brand-light);
   --color-accent: var(--brand-accent-on-dark);
   --color-on-accent: var(--brand-on-accent-on-dark);
-  --muted-strength: 70%;
-  --tint-strength: 80%;
   // Shadows on Dark are a much deeper version of the dark colour, and stronger, so they
   // still show against it.
   --color-shadow: color-mix(in oklab, var(--brand-dark) 25%, black);
@@ -82,24 +94,18 @@ $surfaces: (light, subtle, accent, dark);
 // Roles worked out from the ones above. They're declared on every surface (not just
 // :root) so they're recalculated inside each one.
 :root,
-.surface-light,
-.surface-subtle,
-.surface-accent,
-.surface-dark {
+#{classes()} {
   --color-muted: color-mix(in oklab, var(--color-text) var(--muted-strength), var(--color-bg));
   --color-border: color-mix(in oklab, var(--color-text) 18%, var(--color-bg));
   --color-card: color-mix(in oklab, var(--color-text) 6%, var(--color-bg));
   // A soft shadow that lifts something slightly (e.g. a button on hover), in --color-shadow:
   // the brand's dark colour, or a deeper, stronger (--shadow-strength) version on the Dark surface.
   --shadow-raised:
-    0 0.0625rem 0.125rem color-mix(in oklab, var(--color-shadow) calc(20% * var(--shadow-strength, 1)), transparent),
-    0 0.375rem 1rem -0.25rem color-mix(in oklab, var(--color-shadow) min(100%, calc(35% * var(--shadow-strength, 1))), transparent);
+    0 0.0625rem 0.125rem color-mix(in oklab, var(--color-shadow) calc(20% * var(--shadow-strength)), transparent),
+    0 0.375rem 1rem -0.25rem color-mix(in oklab, var(--color-shadow) min(100%, calc(35% * var(--shadow-strength))), transparent);
 }
 
-.surface-light,
-.surface-subtle,
-.surface-accent,
-.surface-dark {
+#{classes()} {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
@@ -124,31 +130,19 @@ $surfaces: (light, subtle, accent, dark);
 // rounded block of its colour. A section on the same surface as the page just blends in.
 //
 // The panel is only painted, never laid out: its colour is drawn by ::before, behind the
-// section, so changing a section's background never moves or resizes anything.
-//   - Sideways it reaches out into the gutter (no further, or it would run off the screen
-//     on phones), so the content keeps exactly its lane width.
-//   - Top and bottom it's pulled in slightly (never more than half the section's spacing,
-//     so it can't cut into the content), leaving a gap between two panels in a row.
+// section, so changing a section's background never moves or resizes anything. It covers the
+// panel area (tools/_panel.scss): out into the gutter, so the content keeps exactly its lane
+// width, and pulled in slightly top and bottom, leaving a gap between two panels in a row.
 @each $page in $surfaces {
-  $others: ();
-  @each $surface in $surfaces {
-    @if $surface != $page {
-      $others: list.append($others, '.surface-#{$surface}', $separator: comma);
-    }
-  }
-  #{page($page)} .l-page > :is(#{$others}):not([data-width='full']) {
+  #{page($page)} .l-page > :is(#{classes($except: $page)}):not([data-width='full']) {
     position: relative;
     isolation: isolate;
     background-color: transparent;
 
     &::before {
       content: '';
-      position: absolute;
-      z-index: -1;
-      inset-block: min(var(--space-2xs), var(--section-space, var(--space-2xl)) / 2);
-      inset-inline: calc(var(--gutter) * -1);
+      @include panel-area;
       background-color: var(--color-bg);
-      border-radius: var(--radius-l);
     }
   }
 }

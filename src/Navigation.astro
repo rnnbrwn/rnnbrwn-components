@@ -22,9 +22,10 @@
 // "disclosure" pattern: a real button with aria-expanded (never hover-only), closed ones out of
 // the tab order, Escape closes (also one shown by hovering, as WCAG 1.4.13 asks), and so do
 // clicking elsewhere and tabbing out; without JavaScript they open on hover and keyboard focus.
-import { siteLink } from './html';
-import { choice } from './settings';
-import type { NavigationData } from './graphql';
+import NewTabNote from './NewTabNote.astro';
+import { linkTarget } from './html';
+import { choice, surfaceClass } from './settings';
+import type { NavigationData, NavigationMenuItem } from './graphql';
 
 interface Props {
   data: NavigationData;
@@ -37,7 +38,6 @@ interface Props {
 const { data, cmsUrl, mainId = 'main', label = 'Main' } = Astro.props;
 const nav = data.navigationSettings?.navigation;
 const siteTitle = data.generalSettings?.title ?? '';
-const surface = choice(nav?.background, 'page');
 const width = choice(nav?.width, 'wide');
 const logo = nav?.logo?.node;
 const logoDark = nav?.logoDark?.node;
@@ -46,23 +46,23 @@ const menuId = 'site-navigation-menu';
 const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
 const here = trimSlash(Astro.url.pathname);
 
-type SourceLink = { url: string | null; label: string | null; target: string | null };
-type Link = { href: string; title: string; newTab: boolean; current: boolean };
-
-const toLink = (link: SourceLink): Link | null => {
+const toLink = (link: NavigationMenuItem) => {
   if (!link.url) return null;
-  let href = siteLink(link.url, cmsUrl, Astro.site);
+  const { attrs, newTab } = linkTarget(link, cmsUrl, Astro.site);
   // "#contact" typed into a menu means that section of the home page, from any page.
-  if (href.startsWith('#')) href = `/${href}`;
+  const href = attrs.href.startsWith('#') ? `/${attrs.href}` : attrs.href;
   // Current page: a site link to this path (not an anchor within it).
   const current = href.startsWith('/') && !href.includes('#') && trimSlash(href.split('?')[0]) === here;
-  return { href, title: link.label || href, newTab: link.target === '_blank', current };
+  // What to spread on the <a>.
+  const linkAttrs = { ...attrs, href, 'aria-current': current ? ('page' as const) : undefined };
+  return { title: link.label || href, newTab, current, attrs: linkAttrs };
 };
+type Link = NonNullable<ReturnType<typeof toLink>>;
 
 // The links: from the WordPress menu in the "Main navigation" location, with one level of
 // sub-links (items dragged under another in Appearance → Menus; deeper ones aren't shown), or
 // (for one-page sites) from the sections picked in wp-admin → Navigation.
-const links: (SourceLink & { children: SourceLink[] })[] =
+const links: (NavigationMenuItem & { children: NavigationMenuItem[] })[] =
   nav?.source === 'sections'
     ? (nav.navigationSections ?? []).map((item) => ({ url: choice(item.target, ''), label: item.label, target: null, children: [] }))
     : (data.navigationMenu?.nodes ?? []).map((item) => ({ ...item, children: item.childItems?.nodes ?? [] }));
@@ -74,15 +74,9 @@ const items = links.flatMap((item, index) => {
   // A parent whose sub-links include this page is marked too (visually; aria-current stays on the page's own link).
   return [{ ...link, children, subId: `${menuId}-${index}`, currentWithin: children.some((child) => child.current) }];
 });
-const linkAttrs = (link: Link) => ({
-  href: link.href,
-  'aria-current': link.current ? ('page' as const) : undefined,
-  target: link.newTab ? ('_blank' as const) : undefined,
-  rel: link.newTab ? 'noopener' : undefined,
-});
 ---
 
-<header class:list={['site-nav', surface !== 'page' && `surface-${surface}`]} data-site-nav>
+<header class:list={['site-nav', surfaceClass(choice(nav?.background, 'page'))]} data-site-nav>
   {/* Runs straight away, before the links are drawn, so they never flash open while the page loads. */}
   <script is:inline>document.currentScript.parentElement.setAttribute('data-enhanced', '');</script>
 
@@ -127,19 +121,19 @@ const linkAttrs = (link: Link) => ({
               {items.map((item) => (
                 <li class="site-nav__item" data-current-within={item.currentWithin || undefined}>
                   {item.children.length === 0 ? (
-                    <a {...linkAttrs(item)}>{item.title}{item.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a>
+                    <a {...item.attrs}>{item.title}<NewTabNote show={item.newTab} /></a>
                   ) : (
                     <>
                       {/* The parent is a link of its own; the button beside it opens its sub-links. */}
                       <span class="site-nav__parent">
-                        <a {...linkAttrs(item)}>{item.title}{item.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a>
+                        <a {...item.attrs}>{item.title}<NewTabNote show={item.newTab} /></a>
                         <button type="button" class="site-nav__sub-toggle" aria-expanded="false" aria-controls={item.subId}>
                           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" /></svg>
                           <span class="visually-hidden">{item.title} menu</span>
                         </button>
                       </span>
                       <ul class="site-nav__sub" id={item.subId}>
-                        {item.children.map((child) => <li><a {...linkAttrs(child)}>{child.title}{child.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a></li>)}
+                        {item.children.map((child) => <li><a {...child.attrs}>{child.title}<NewTabNote show={child.newTab} /></a></li>)}
                       </ul>
                     </>
                   )}
@@ -413,16 +407,10 @@ const linkAttrs = (link: Link) => ({
       text-underline-offset: 0.25em;
 
       &:hover { text-decoration-line: underline; }
-
-      &[aria-current='page'] {
-        font-weight: 700;
-        text-decoration-line: underline;
-        text-decoration-thickness: 2px;
-        text-decoration-color: var(--color-accent);
-      }
     }
 
-    // A parent whose sub-links include this page looks current too.
+    // The current page, and a parent whose sub-links include it.
+    a[aria-current='page'],
     [data-current-within] > .site-nav__parent > a {
       font-weight: 700;
       text-decoration-line: underline;
@@ -534,6 +522,14 @@ const linkAttrs = (link: Link) => ({
 
   // ---------- Wider screens: the links sit in the bar, no menu button ----------
 
+  // A dropdown, open (shown with its button, by hovering, or by keyboard focus without JavaScript).
+  @mixin sub-open {
+    visibility: visible;
+    opacity: 1;
+    translate: none;
+    transition-delay: 0s;
+  }
+
   @include mq(md) {
     .site-nav__toggle,
     .site-nav:not([data-enhanced]) .site-nav__toggle {
@@ -600,18 +596,12 @@ const linkAttrs = (link: Link) => ({
     // JavaScript, while something in it has keyboard focus.
     .site-nav__parent:has([aria-expanded='true']) + .site-nav__sub,
     .site-nav:not([data-enhanced]) .site-nav__item:focus-within > .site-nav__sub {
-      visibility: visible;
-      opacity: 1;
-      translate: none;
-      transition-delay: 0s;
+      @include sub-open;
     }
 
     @media (hover: hover) {
       .site-nav__item:hover:not([data-dismissed]) > .site-nav__sub {
-        visibility: visible;
-        opacity: 1;
-        translate: none;
-        transition-delay: 0s;
+        @include sub-open;
       }
 
       .site-nav__item:hover:not([data-dismissed]) .site-nav__sub-toggle svg { rotate: 180deg; }

@@ -1,23 +1,6 @@
-import puppeteer from 'puppeteer-core';
-import fs from 'node:fs';
-import { mkdirSync } from 'node:fs';
-// Run against a BUILT rnnbrwn.xyz served locally; see README.md.
-const BASE = process.env.BASE_URL || 'http://localhost:4500';
-const SHOTS = new URL('./shots', import.meta.url).pathname;
-mkdirSync(SHOTS, { recursive: true });
-const axeSource = fs.readFileSync(new URL('./node_modules/axe-core/axe.min.js', import.meta.url), 'utf8');
+import { BASE, SHOTS, SURFACES, BRANDS, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/media-text/';
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
-const results = [];
-const check = (name, pass, detail = '') => results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const pick = (p, kind, v) => p.evaluate((k, v) => document.querySelector(`[data-preview="${k}"][data-value="${v}"]`).click(), kind, v);
-const SURFACES = ['light', 'subtle', 'accent', 'dark'];
-const BRANDS = ['', 'forest', 'terracotta', 'harbour', 'plum', 'monochrome'];
-const p = await b.newPage();
-const errors = [];
-p.on('pageerror', (e) => errors.push(e.message));
-p.on('response', (r) => r.status() >= 400 && !r.url().endsWith('favicon.ico') && errors.push(`${r.status()} ${r.url()}`));
+const p = await newPage();
 
 // Every Media Text: its options (from its classes), and the image's and text's boxes.
 const sections = () => p.evaluate(() => [...document.querySelectorAll('.media-text')].map((s, i) => {
@@ -96,12 +79,10 @@ for (const brand of BRANDS) {
     const r = await p.evaluate(() => {
       const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
-      const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
-      const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
       let min = 99, where = '';
       for (const t of document.querySelectorAll('.media-text__eyebrow, .media-text__heading, .media-text .prose :is(p, li, h3, a), .media-text .button--text')) {
         const probe = document.createElement('div'); probe.style.background = 'var(--color-bg)'; t.closest('.media-text__content').append(probe);
-        const c = ratio(rgb(getComputedStyle(t).color), rgb(getComputedStyle(probe).backgroundColor)); probe.remove();
+        const c = contrastRatio(rgb(getComputedStyle(t).color), rgb(getComputedStyle(probe).backgroundColor)); probe.remove();
         if (c < min) { min = c; where = `${t.tagName.toLowerCase()}.${t.className || ''} in "${t.closest('.media-text').querySelector('.media-text__heading')?.textContent.slice(12, 50) ?? '(no heading)'}"`; }
       }
       return { min, where };
@@ -134,7 +115,7 @@ check('links to the CMS became site links', structure.every((s) => s.cmsLinks ==
 
 // No JavaScript: the same sections.
 const withJs = await p.evaluate(() => document.querySelectorAll('.media-text img').length);
-const nojs = await b.newPage(); await nojs.setJavaScriptEnabled(false);
+const nojs = await browser.newPage(); await nojs.setJavaScriptEnabled(false);
 await nojs.goto(PAGE, { waitUntil: 'networkidle0' });
 const noJs = await nojs.evaluate(() => document.querySelectorAll('.media-text img').length);
 check('without JavaScript every section and image is there', noJs === withJs && withJs > 0, `${noJs}/${withJs}`);
@@ -144,11 +125,7 @@ await nojs.close();
 for (const surface of ['light', 'dark']) {
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
   await pick(p, 'surface', surface); await wait(150);
-  await p.evaluate(axeSource);
-  const axeRes = await p.evaluate(async () => { const r = await axe.run(document.querySelectorAll('.media-text'), { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] }); return { v: r.violations.map((v) => `${v.id}: ${v.nodes.length}`), inc: r.incomplete.map((v) => `${v.id}: ${v.nodes.length}`) }; });
-  check(`axe scan of all Media Text sections (${surface} page)`, axeRes.v.length === 0, axeRes.v.join(', ') || `no violations; needs a human: ${axeRes.inc.join(', ') || 'nothing'}`);
+  await axeCheck(p, `axe scan of all Media Text sections (${surface} page)`, '.media-text');
 }
 
-console.log(results.join('\n'));
-console.log('page errors:', errors.length ? errors : 'none');
-await b.close();
+await finish();

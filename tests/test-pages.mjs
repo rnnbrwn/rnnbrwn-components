@@ -1,12 +1,4 @@
-import puppeteer from 'puppeteer-core';
-import { mkdirSync } from 'node:fs';
-// Run against a BUILT rnnbrwn.xyz served locally; see README.md.
-const BASE = process.env.BASE_URL || 'http://localhost:4500';
-const SHOTS = new URL('./shots', import.meta.url).pathname;
-mkdirSync(SHOTS, { recursive: true });
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
-const results = [];
-const check = (name, pass, detail = '') => results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
+import { BASE, SHOTS, check, wait, newPage, finish } from './lib.mjs';
 // The Example Site is a real-looking page (its first Hero is the <h1>), not one component's test versions.
 const EXAMPLE = 'Example Site';
 // Menu order; Buttons and Placeholder are parts, so they're sub-links of Parts (a dropdown on desktop).
@@ -14,15 +6,15 @@ const expected = { Components: null, [EXAMPLE]: 'example-site', Hero: 'hero', 'R
 const PARTS = 'Parts';
 const SUB_LINKS = ['Buttons', 'Placeholder'];
 for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 375, height: 800, isMobile: true, hasTouch: true }]]) {
-  const p = await b.newPage();
+  const p = await newPage();
   await p.setViewport(viewport);
   await p.goto(BASE + '/components/', { waitUntil: 'networkidle0' });
   const menu = await p.evaluate(() => [...document.querySelectorAll('.site-nav__links a')].map((a) => a.textContent.trim()));
   check(`${label}: menu lists the overview and every component page`, JSON.stringify(menu) === JSON.stringify(Object.keys(expected)), menu.join(' · '));
   for (const name of Object.keys(expected)) {
-    if (label === 'phone') { await p.tap('.site-nav__toggle'); await new Promise((r) => setTimeout(r, 350)); }
+    if (label === 'phone') { await p.tap('.site-nav__toggle'); await wait(350); }
     // On desktop a sub-link is in the dropdown: open it with its button first.
-    if (label === 'desktop' && SUB_LINKS.includes(name)) { await p.click('.site-nav__sub-toggle'); await new Promise((r) => setTimeout(r, 300)); }
+    if (label === 'desktop' && SUB_LINKS.includes(name)) { await p.click('.site-nav__sub-toggle'); await wait(300); }
     const link = await p.evaluateHandle((n) => [...document.querySelectorAll('.site-nav__links a')].find((a) => a.textContent.trim() === n), name);
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), label === 'phone' ? link.tap() : link.click()]);
     const r = await p.evaluate(() => ({
@@ -63,7 +55,7 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
 // its content is exactly as wide as the chosen lane, centred. At 1440px the lanes are their
 // full widths: narrow 640px, content 960px, wide 1280px.
 {
-  const p = await b.newPage();
+  const p = await newPage();
   await p.setViewport({ width: 1440, height: 900 });
   const LANES = { narrow: 640, content: 960, wide: 1280 };
   const wrong = [];
@@ -83,5 +75,4 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
   check('full-width sections: background edge to edge, content as wide as its Content width', wrong.length === 0 && count > 0, wrong.join('; ') || `${count} sections`);
   await p.close();
 }
-console.log(results.join('\n'));
-await b.close();
+await finish();

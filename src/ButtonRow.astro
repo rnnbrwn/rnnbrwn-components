@@ -4,12 +4,7 @@
 // BUTTONS_FIELDS (graphql.ts) and pass it here. They wrap onto new lines when space runs out.
 // Renders nothing when there are no buttons with a link.
 import Button, { type ButtonStyle } from './Button.astro';
-import { choice } from './settings';
-
-export type ButtonsField = {
-  link: { title: string | null; url: string | null; target: string | null } | null;
-  style: string[] | null;
-}[] | null | undefined;
+import { choice, type ButtonsField } from './settings';
 
 interface Props {
   buttons: ButtonsField;

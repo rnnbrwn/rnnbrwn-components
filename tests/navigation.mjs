@@ -1,16 +1,5 @@
-import puppeteer from 'puppeteer-core';
-import fs from 'node:fs';
-import { mkdirSync } from 'node:fs';
-// Run against a BUILT rnnbrwn.xyz served locally; see README.md.
-const BASE = process.env.BASE_URL || 'http://localhost:4500';
-const SHOTS = new URL('./shots', import.meta.url).pathname;
-mkdirSync(SHOTS, { recursive: true });
-const axeSource = fs.readFileSync(new URL('./node_modules/axe-core/axe.min.js', import.meta.url), 'utf8');
+import { BASE, SHOTS, browser, check, wait, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/hero/';
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
-const results = [];
-const check = (name, pass, detail = '') => results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const state = (p) => p.evaluate(() => {
   const btn = document.querySelector('.site-nav__toggle'), menu = document.querySelector('.site-nav__menu');
   const ms = getComputedStyle(menu), r = menu.getBoundingClientRect();
@@ -19,14 +8,10 @@ const state = (p) => p.evaluate(() => {
     overflow: getComputedStyle(document.documentElement).overflow, focus: document.activeElement?.className || '', focusText: document.activeElement?.textContent.trim() || '' };
 });
 const tabs = async (p, n) => { const seq = []; for (let i = 0; i < n; i++) { await p.keyboard.press('Tab'); seq.push(await p.evaluate(() => { const a = document.activeElement; return (a.closest('header') ? 'header:' : 'PAGE:') + (a.textContent.trim().replace(/\s+/g, ' ') || a.className || a.tagName); })); } return seq; };
-const axe = async (p, label) => {
-  await p.evaluate(axeSource);
-  const r = await p.evaluate(async () => (await axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] })).violations.map((v) => `${v.id}: ${v.nodes.length}`));
-  check(`axe scan (whole page): ${label}`, r.length === 0, r.join(', ') || 'no violations');
-};
+const axe = (p, label) => axeCheck(p, `axe scan (whole page): ${label}`);
 
 // ---- Phone ----
-let p = await b.newPage();
+let p = await browser.newPage();
 await p.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 let s = await state(p);
@@ -89,7 +74,7 @@ check('widening the window closes it and restores the page', s.expanded === 'fal
 await p.close();
 
 // ---- Many links: the menu itself scrolls ----
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 375, height: 260 }); // short enough that four links don't fit
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await p.click('.site-nav__toggle'); await wait(400);
@@ -98,7 +83,7 @@ check('short screen: the menu scrolls so every link can be reached', scrolls.can
 await p.close();
 
 // ---- Desktop unchanged ----
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 s = await state(p);
@@ -108,7 +93,7 @@ await axe(p, 'desktop');
 await p.close();
 
 // ---- Reduced motion, no JS, dark ----
-p = await b.newPage();
+p = await browser.newPage();
 await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
@@ -116,7 +101,7 @@ await p.click('.site-nav__toggle'); await wait(20);
 const rm = await p.evaluate(() => ({ o: getComputedStyle(document.querySelector('.site-nav__menu')).opacity, t: getComputedStyle(document.querySelector('.site-nav__links')).translate }));
 check('reduced motion: appears instantly, links don\'t move', rm.o === '1' && (rm.t === 'none' || rm.t === '0px'), `opacity ${rm.o}, translate ${rm.t}`);
 await p.close();
-p = await b.newPage();
+p = await browser.newPage();
 await p.setJavaScriptEnabled(false);
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
@@ -125,7 +110,7 @@ s = await state(p);
 const flow = await p.evaluate(() => ({ position: getComputedStyle(document.querySelector('.site-nav__menu')).position, below: document.querySelector('main').getBoundingClientRect().top >= document.querySelector('.site-nav__menu').getBoundingClientRect().bottom }));
 check('no JavaScript: links shown under the bar, no button, page usable', !s.btnShown && s.visibility === 'visible' && flow.position === 'static' && flow.below, `menu ${s.rect[3]}px tall, ${flow.position}`);
 await p.close();
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await p.evaluate(() => document.querySelector('[data-preview="surface"][data-value="dark"]').click());
@@ -143,7 +128,7 @@ const sub = (p) => p.evaluate(() => {
     parentLeft: Math.round(item.querySelector('a').getBoundingClientRect().left), subLinkLeft: Math.round(list.querySelector('a').getBoundingClientRect().left), mainTop: Math.round(document.querySelector('main').getBoundingClientRect().top) };
 });
 const subCenter = (p, selector) => p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, selector);
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 let d = await sub(p);
@@ -212,7 +197,7 @@ check('dropdown: stays on screen on a narrow desktop (800px)', d.shown && d.righ
 await p.close();
 
 // Current page inside a dropdown: the page's own link is aria-current; its parent is marked too.
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(BASE + '/components/buttons/', { waitUntil: 'networkidle0' });
 const cur = await p.evaluate(() => ({
@@ -224,7 +209,7 @@ check('dropdown: on a sub-link\'s page, that link is current and its parent look
 await p.close();
 
 // Touch (a tablet: wide, no hover): the button opens and closes it; the parent link still goes to its page.
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 1024, height: 768, isMobile: true, hasTouch: true });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await p.tap('.site-nav__sub-toggle'); await wait(300);
@@ -236,7 +221,7 @@ check('dropdown: tapping the parent link goes to its page', new URL(p.url()).pat
 await p.close();
 
 // No JavaScript, wide: no button; the dropdown opens on keyboard focus.
-p = await b.newPage();
+p = await browser.newPage();
 await p.setJavaScriptEnabled(false);
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
@@ -248,7 +233,7 @@ check('dropdown, no JavaScript: no button; Tab from the parent opens it on its f
 await p.close();
 
 // Phone: listed under the parent, indented, no button.
-p = await b.newPage();
+p = await browser.newPage();
 await p.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await p.tap('.site-nav__toggle'); await wait(400);
@@ -257,5 +242,4 @@ check('phone: sub-links listed under their parent, indented, no dropdown button'
 await p.screenshot({ path: SHOTS + '/fs-open-sub.png' });
 await p.close();
 
-console.log(results.join('\n'));
-await b.close();
+await finish();

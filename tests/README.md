@@ -20,4 +20,7 @@ cd platform/rnnbrwn-components/tests && npm install && npm run all
 | `theme-contrast.mjs` | Every theme × surface × colour role (text, muted, link, button, card, photo) is at least 4.5:1 |
 
 Each prints `PASS`/`FAIL` lines; screenshots go to `tests/shots/` (not committed). Add a script for
-each new component (see the `/add-component` skill), reusing these as templates.
+each new component (see the `/add-component` skill), reusing these as templates. The shared set-up
+is in `lib.mjs`: the browser, `check()`/`info()`, `newPage()` (records page errors and gives the page
+`contrastRatio(a, b)`), `pick()` for the preview switches, `axeCheck()`, `SURFACES`/`BRANDS`, and
+`finish()` to print the results. Add a script to `package.json`'s `all` too.

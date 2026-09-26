@@ -5,7 +5,7 @@
 // surface, so the section follows the page's; a surface matching the page blends in, and a
 // different one becomes a panel. A full-width section keeps its content in the lane chosen as
 // its Content width (Narrow, Content or Wide) unless `bleed` is set (for things that should run edge to edge, like a big image).
-import { choice, contentLane, type SectionSettings } from './settings';
+import { choice, contentLane, sectionWidth, surfaceClass, type SectionSettings } from './settings';
 
 interface Props {
   section: SectionSettings;
@@ -15,8 +15,7 @@ interface Props {
 }
 
 const { section, as: Tag = 'section', bleed = false, class: className, ...attrs } = Astro.props;
-const width = choice(section.width, 'content');
-const surface = choice(section.background, 'page');
+const width = sectionWidth(section);
 // Tidied the same way WordPress saves it ("Our Services" → "our-services").
 const anchor =
   section.anchor?.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || undefined;
@@ -24,7 +23,7 @@ const anchor =
 
 <Tag
   {...attrs}
-  class:list={[className, surface !== 'page' && `surface-${surface}`]}
+  class:list={[className, surfaceClass(choice(section.background, 'page'))]}
   id={anchor}
   data-width={width}
   data-space={choice(section.spacing, 'm')}

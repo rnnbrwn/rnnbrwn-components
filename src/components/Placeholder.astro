@@ -2,16 +2,17 @@
 // Placeholder: a labelled box that shows its own settings, for testing the shared
 // Settings tab on test pages. WordPress half: rnnbrwn-base/sections/components/placeholder.php
 import Section from '../Section.astro';
-import { choice, type SectionSettings } from '../settings';
+import { choice, sectionWidth, type SectionSettings } from '../settings';
 
 interface Props {
   section: SectionSettings & { heading: string | null; note: string | null };
 }
 
 const { section } = Astro.props;
+const width = sectionWidth(section);
 const settings = [
-  ['Width', choice(section.width, 'content')],
-  ...(choice(section.width, 'content') === 'full' ? [['Content width', choice(section.contentWidth, 'content')]] : []),
+  ['Width', width],
+  ...(width === 'full' ? [['Content width', choice(section.contentWidth, 'content')]] : []),
   ['Spacing', choice(section.spacing, 'm')],
   ['Background', choice(section.background, 'page')],
   ['Anchor', section.anchor || '–'],

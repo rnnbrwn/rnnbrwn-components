@@ -1,0 +1,9 @@
+---
+// Tells screen readers a link opens in a new tab. Put it inside the <a>, after its text:
+//   <a {...attrs}>{title}<NewTabNote show={newTab} /></a>
+interface Props {
+  show: boolean;
+}
+---
+
+{Astro.props.show && <span class="visually-hidden"> (opens in a new tab)</span>}

@@ -1,24 +1,8 @@
-import puppeteer from 'puppeteer-core';
-import fs from 'node:fs';
-import { mkdirSync } from 'node:fs';
+import { BASE, SHOTS, SURFACES, BRANDS, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 // Buttons (the Button component and the Buttons section). Run against a BUILT rnnbrwn.xyz
 // served locally; see README.md.
-const BASE = process.env.BASE_URL || 'http://localhost:4500';
-const SHOTS = new URL('./shots', import.meta.url).pathname;
-mkdirSync(SHOTS, { recursive: true });
-const axeSource = fs.readFileSync(new URL('./node_modules/axe-core/axe.min.js', import.meta.url), 'utf8');
 const PAGE = BASE + '/components/buttons/';
-const SURFACES = ['light', 'subtle', 'accent', 'dark'];
-const BRANDS = ['', 'forest', 'terracotta', 'harbour', 'plum', 'monochrome'];
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
-const results = [];
-const check = (name, pass, detail = '') => results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const pick = (p, kind, v) => p.evaluate((k, v) => document.querySelector(`[data-preview="${k}"][data-value="${v}"]`).click(), kind, v);
-const p = await b.newPage();
-const errors = [];
-p.on('pageerror', (e) => errors.push(e.message));
-p.on('response', (r) => r.status() >= 400 && !r.url().endsWith('favicon.ico') && errors.push(`${r.status()} ${r.url()}`));
+const p = await newPage();
 
 const geometry = () => p.evaluate(() => [...document.querySelectorAll('.buttons .button')].map((a) => {
   const r = a.getBoundingClientRect();
@@ -70,8 +54,6 @@ await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' 
 const measure = () => p.evaluate(() => {
   const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const rgba = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data]; };
-  const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
-  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   return [...document.querySelectorAll('.buttons .button')].map((a) => {
     // what's behind the button: its own fill if it has one, otherwise its surface's background
     const surface = getComputedStyle(a.closest('[class*="surface-"]') ?? document.body).getPropertyValue('--color-bg').trim();
@@ -80,7 +62,7 @@ const measure = () => p.evaluate(() => {
     const behind = own[3] === 255 ? own.slice(0, 3) : rgba(getComputedStyle(probe).color).slice(0, 3);
     probe.remove();
     const cs = getComputedStyle(a);
-    return { name: a.textContent.trim(), style: a.className.replace('button', '').trim() || 'solid', text: ratio(rgba(cs.color), behind), border: ratio(rgba(cs.borderTopColor), behind) };
+    return { name: a.textContent.trim(), style: a.className.replace('button', '').trim() || 'solid', text: contrastRatio(rgba(cs.color), behind), border: contrastRatio(rgba(cs.borderTopColor), behind) };
   });
 });
 let worst = { text: 99 }, worstBorder = { border: 99 }, count = 0;
@@ -159,17 +141,13 @@ check('Tab reaches every button in reading order', JSON.stringify(reached) === J
 check('keyboard focus shows an outline on every button', rings.every((r) => r === 'solid'));
 
 // Accessibility scan
-await p.evaluate(axeSource);
-const axeRes = await p.evaluate(async () => { const r = await axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] }); return { v: r.violations.map((v) => `${v.id}: ${v.nodes.length}`), inc: r.incomplete.map((v) => `${v.id}: ${v.nodes.length}`) }; });
-check('axe scan of the whole Buttons page', axeRes.v.length === 0, axeRes.v.join(', ') || `no violations; needs a human: ${axeRes.inc.join(', ') || 'nothing'}`);
+await axeCheck(p, 'axe scan of the whole Buttons page');
 
 // No JavaScript: buttons are plain links, all still there
-const noJs = await b.newPage();
+const noJs = await browser.newPage();
 await noJs.setJavaScriptEnabled(false);
 await noJs.goto(PAGE, { waitUntil: 'networkidle0' });
 const noJsCount = await noJs.$$eval('.buttons a.button[href]', (x) => x.length);
 check('without JavaScript every button is still a working link', noJsCount === info.length, `${noJsCount} of ${info.length}`);
 
-console.log(results.join('\n'));
-console.log('page errors:', errors.length ? errors : 'none');
-await b.close();
+await finish();

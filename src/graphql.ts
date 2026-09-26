@@ -2,6 +2,7 @@ import { components, type ComponentName } from './registry';
 import { SETTINGS_FIELDS, PAGE_SETTINGS_FIELDS } from './settings';
 
 export { BUTTONS_FIELDS, choice, pageSurface, SURFACES, type SectionSettings, type Surface } from './settings';
+import type { Choice } from './settings';
 export type { ComponentName };
 
 /** GraphQL type of a component: card_grid -> PageSectionsSectionsCardGridLayout */
@@ -52,24 +53,24 @@ export const NAVIGATION_QUERY = `
   }
 `;
 
-type NavigationImage = { node: { sourceUrl: string; mediaDetails: { width: number; height: number } | null } };
+type NavigationImage = { node: { sourceUrl: string; mediaDetails: { width: number; height: number } | null } } | null;
 
 export interface NavigationData {
   generalSettings: { title: string };
   navigationSettings: {
     navigation: {
-      logo: NavigationImage | null;
-      logoDark: NavigationImage | null;
+      logo: NavigationImage;
+      logoDark: NavigationImage;
       source: string | null;
-      navigationSections: { target: string[] | null; label: string | null }[] | null;
-      background: string[] | null;
-      width: string[] | null;
+      navigationSections: { target: Choice; label: string | null }[] | null;
+      background: Choice;
+      width: Choice;
     } | null;
   } | null;
   navigationMenu: { nodes: (NavigationMenuItem & { childItems: { nodes: NavigationMenuItem[] } | null })[] } | null;
 }
 
-interface NavigationMenuItem {
+export interface NavigationMenuItem {
   label: string | null;
   url: string | null;
   target: string | null;

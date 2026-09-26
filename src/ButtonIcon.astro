@@ -1,0 +1,21 @@
+---
+// The automatic arrow on a button (.button__icon in scss/base/_buttons.scss): a link to another
+// website or one that opens in a new tab gets ↗ (on any style), a text link gets →, and Solid and
+// Outline buttons to the site's own pages get none. Used by Button.astro and Card Grid's "Read more".
+import type { ButtonStyle } from './Button.astro';
+
+interface Props {
+  style: ButtonStyle;
+  newTab: boolean;
+  external: boolean;
+}
+
+const { style, newTab, external } = Astro.props;
+const icon = newTab || external ? 'out' : style === 'text' ? 'next' : null;
+---
+
+{icon && (
+  <svg class:list={['button__icon', `button__icon--${icon}`]} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d={icon === 'next' ? 'M2 8h11M9 4l4 4-4 4' : 'M4 12 12 4M5.5 4H12v6.5'} />
+  </svg>
+)}

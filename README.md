@@ -47,7 +47,16 @@ To give a component buttons:
 
 Photos behind text are tinted with the section's colour at `--tint-strength` (80%, Accent 90%), chosen so text passes 4.5:1 even over pure white or black. With a mid-tone accent (e.g. white on pink at 4.6:1), Accent over a photo can still fall just short: prefer Light, Subtle or Dark over photos for such brands.
 
-Anything else rendered from a WordPress link field uses `linkTarget(link, cmsUrl, Astro.site)` from `src/html.ts` (the site address, new tab, other website), as Button and Card Grid do, so links behave the same everywhere.
+Anything else rendered from a WordPress link field uses `linkTarget(link, cmsUrl, Astro.site)` from `src/html.ts` (the site address, new tab, other website, and `attrs` to spread on the `<a>`) with `<NewTabNote show={newTab} />` inside the link, as Button, Card Grid and Navigation do, so links behave the same everywhere.
+
+### Shared pieces
+Reuse these rather than writing a component's own version:
+- **Images:** `IMAGE_FIELDS` in the registry and `<Image image={...} sizes={...} />` (`src/Image.astro`: srcset, width and height, lazy unless `eager`, Media Library alt text unless `alt` is given). `laneSizes(section, share)` in `src/settings.ts` works out `sizes` from the section's lane. A "Keep in view" setting is `data-focus` on the image's wrapper (styled in `scss/base/_base.scss`).
+- **Eyebrows:** `class="eyebrow <component>__eyebrow"` (`scss/base/_text.scss`); change size or colour with the component's own class.
+- **Field shapes:** `WpLink`, `WpImage`, `ButtonsField`, `Choice` and `LINK_FIELDS` in `src/settings.ts`; `sectionWidth()`, `contentLane()` and `surfaceClass()` for the Settings tab.
+- **Arrows:** `<ButtonIcon style newTab external />`, the same automatic → and ↗ as Button.
+- **Panels:** `@include panel-area;` (`scss/tools/_panel.scss`) for anything painted like a section panel (Hero's photo uses it).
+- **WordPress fields:** `rs_eyebrow`, `rs_textarea`, `rs_image`, `rs_select` (with an `$extra` array for instructions and conditions), `rs_when` for conditional logic and `rs_background` in `sections.php`.
 
 Editor text in any component uses `rs_editor()` in WordPress (a trimmed toolbar: subheadings, bold, italic, lists, quote, link; pasted text arrives as plain text) and `<div class="prose" set:html={editorHtml(html, cmsUrl)} />` in Astro, which styles it and turns links to the CMS's own pages into site links.
 
