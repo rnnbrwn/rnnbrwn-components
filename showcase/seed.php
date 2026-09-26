@@ -25,8 +25,26 @@ $id              = $test_page( 'components', 'Components' );
 $component_pages = [
 	'hero'        => $test_page( 'hero', 'Hero', $id, 1 ),
 	'rich_text'   => $test_page( 'rich-text', 'Rich Text', $id, 2 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 3 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 3 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 4 ),
 ];
+
+// The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
+// as components are built. Unlike the test pages, the seed never changes it once it exists
+// (its starter content, at the end, only goes in while it has no sections).
+$example_page = get_page_by_path( 'components/example-site' );
+$example_id   = $example_page ? $example_page->ID : wp_insert_post( [
+	'post_type'   => 'page',
+	'post_status' => 'publish',
+	'post_name'   => 'example-site',
+	'post_title'  => 'Example Site',
+	'post_parent' => $id,
+	'menu_order'  => 0,
+	'meta_input'  => [ '_wp_page_template' => 'template-sections.php' ],
+] );
+if ( ! $example_page ) {
+	update_field( 'field_rs_page_surface', 'light', $example_id );
+}
 
 // ---------- Placeholder: every width, background and spacing option of the shared settings ----------
 $placeholder = fn( $heading, $settings, $note = '' ) => array_merge( [
@@ -88,8 +106,9 @@ $add_link = fn( $title, $url, $target = '' ) => wp_update_nav_menu_item( $menu_i
 	'menu-item-type'   => 'custom',
 	'menu-item-status' => 'publish',
 ] );
-// The overview, then one link per component page.
+// The overview, the Example Site, then one link per component page.
 $add_page( $id );
+$add_page( $example_id );
 foreach ( $component_pages as $page_id ) {
 	$add_page( $page_id );
 }
@@ -137,8 +156,11 @@ $hero = fn( $heading, $settings = [] ) => array_merge( [
 	'eyebrow'           => 'Eyebrow label',
 	'heading'           => $heading,
 	'intro'             => 'An intro of a sentence or two, saying what the page is about and what to do next.',
-	'primary_link'      => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ],
-	'secondary_link'    => [ 'title' => 'Second button', 'url' => home_url( '/components/placeholder/#surfaces' ), 'target' => '' ],
+	'hero_buttons'      => [
+		[ 'link' => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ], 'style' => 'solid' ],
+		[ 'link' => [ 'title' => 'Second button', 'url' => home_url( '/components/placeholder/#surfaces' ), 'target' => '' ], 'style' => 'outline' ],
+		[ 'link' => [ 'title' => 'Text link', 'url' => home_url( '/components/buttons/' ), 'target' => '' ], 'style' => 'text' ],
+	],
 	'height'            => 'standard',
 	'image'             => '',
 	'focus'             => 'center',
@@ -149,10 +171,10 @@ $hero = fn( $heading, $settings = [] ) => array_merge( [
 	'background'        => 'page',
 	'anchor'            => '',
 ], $settings );
-// The photo Heroes use a real photo: the media-library image titled "penrice" when there is one
+// The photo Heroes use a real photo: the media-library image titled "eugene" when there is one
 // (uploaded locally for testing), otherwise the test pattern. The last Hero always uses the
 // pattern, to keep the worst case for text contrast on the page.
-$real_photo = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'title' => 'penrice', 'numberposts' => 1 ] );
+$real_photo = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'title' => 'eugene', 'numberposts' => 1 ] );
 $photo      = [ 'variant' => 'background_image', 'image' => $real_photo ? $real_photo[0]->ID : $photo_id, 'width' => 'full' ];
 $pattern    = [ 'variant' => 'background_image', 'image' => $photo_id, 'width' => 'full' ];
 
@@ -160,12 +182,53 @@ $sections_hero = [
 	$hero( 'Hero: centred', [ 'anchor' => 'hero' ] ),
 	$hero( 'Hero: centred, tall, on Accent, full width', [ 'height' => 'tall', 'background' => 'accent', 'width' => 'full' ] ),
 	$hero( 'Hero: centred on Dark, as a panel', [ 'background' => 'dark' ] ),
-	$hero( 'Hero: heading only', [ 'eyebrow' => '', 'intro' => '', 'primary_link' => '', 'secondary_link' => '' ] ),
+	$hero( 'Hero: heading only', [ 'eyebrow' => '', 'intro' => '', 'hero_buttons' => [] ] ),
 	$hero( 'Hero: background image, left aligned', $photo ),
 	$hero( 'Hero: background image, tall, centred, on Dark', $photo + [ 'height' => 'tall', 'alignment' => 'centre', 'background' => 'dark', 'focus' => 'top' ] ),
 	$hero( 'Hero: background image on Accent, described photo', $photo + [ 'background' => 'accent', 'image_informative' => 1 ] ),
-	$hero( 'Hero: background image, wide, on Subtle', array_merge( $photo, [ 'width' => 'wide', 'background' => 'subtle', 'secondary_link' => [ 'title' => 'Other site', 'url' => 'https://example.com', 'target' => '_blank' ] ] ) ),
+	$hero( 'Hero: background image, wide, on Subtle', array_merge( $photo, [ 'width' => 'wide', 'background' => 'subtle', 'hero_buttons' => [
+		[ 'link' => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ], 'style' => 'solid' ],
+		[ 'link' => [ 'title' => 'Other site', 'url' => 'https://example.com', 'target' => '_blank' ], 'style' => 'outline' ],
+	] ] ) ),
 	$hero( 'Hero: contrast test pattern (worst case)', $pattern ),
+];
+
+// ---------- Buttons ----------
+// No headings in this component, so the button labels say what each row is testing.
+
+$button  = fn( $title, $style, $url = '/contact/', $target = '' ) => [
+	'link'  => [ 'title' => $title, 'url' => str_starts_with( $url, '/' ) ? home_url( $url ) : $url, 'target' => $target ],
+	'style' => $style,
+];
+$buttons = fn( $row, $settings = [] ) => array_merge( [
+	'acf_fc_layout'   => 'buttons',
+	'buttons_buttons' => $row,
+	'alignment'       => 'left',
+	'width'           => 'content',
+	'spacing'         => 's',
+	'background'      => 'page',
+	'anchor'          => '',
+], $settings );
+$every = fn( $where ) => [ $button( "Solid $where", 'solid' ), $button( "Outline $where", 'outline' ), $button( "Text link $where", 'text' ) ];
+
+$sections_buttons = [
+	$buttons( $every( 'on the page' ), [ 'anchor' => 'buttons' ] ),
+	$buttons( $every( 'centred' ), [ 'alignment' => 'centre' ] ),
+	$buttons( [
+		$button( 'Other site, new tab', 'solid', 'https://example.com', '_blank' ),
+		$button( 'Other site, same tab', 'outline', 'https://example.com' ),
+		$button( 'Jump to a section', 'text', '#buttons' ),
+	] ),
+	$buttons( [ $button( 'One button on its own', 'solid' ) ] ),
+	$buttons( $every( 'on Subtle' ), [ 'background' => 'subtle' ] ),
+	$buttons( $every( 'on Accent' ), [ 'background' => 'accent' ] ),
+	$buttons( $every( 'on Dark' ), [ 'background' => 'dark' ] ),
+	$buttons( $every( 'on Dark, full width' ), [ 'background' => 'dark', 'width' => 'full', 'alignment' => 'centre', 'spacing' => 'm' ] ),
+	$buttons( [
+		$button( 'A much longer button label, to see how it wraps on a phone', 'solid' ),
+		$button( 'Another long label for the outline style', 'outline' ),
+		$button( 'And a long text link that wraps as well', 'text' ),
+	], [ 'width' => 'narrow' ] ),
 ];
 
 // ---------- Rich Text ----------
@@ -235,10 +298,48 @@ update_field( 'field_rs_sections', [], $id );
 $rows = [
 	'hero'        => $sections_hero,
 	'rich_text'   => $sections_rich_text,
+	'buttons'     => $sections_buttons,
 	'placeholder' => $sections,
 ];
 foreach ( $rows as $name => $sections_for_page ) {
 	update_field( 'field_rs_sections', $sections_for_page, $component_pages[ $name ] );
 	WP_CLI::log( sprintf( '%s (page %d): %d sections', get_the_title( $component_pages[ $name ] ), $component_pages[ $name ], count( $sections_for_page ) ) );
+}
+
+// The Example Site's starter content: only while the page has no sections, so what's added in
+// WordPress is never overwritten. To start it again, remove all its sections and re-run the seed.
+if ( ! get_field( 'field_rs_sections', $example_id ) ) {
+	$contact = home_url( '/contact/' );
+	update_field( 'field_rs_sections', [
+		$hero( 'Good work, made close to home', $photo + [
+			'eyebrow'      => 'Example Site',
+			'intro'        => 'A made-up small business, to see the components working together on one page as they would on a real site.',
+			'height'       => 'tall',
+			'background'   => 'dark',
+			'hero_buttons' => [ $button( 'Get in touch', 'solid' ), $button( 'See what we do', 'text', '#services' ) ],
+		] ),
+		$rich_text( 'What we do', '<p>We design and make things for people nearby: small, careful work, done properly and delivered on time.</p>
+
+<h3>How it works</h3>
+<ol>
+ 	<li>Tell us what you need.</li>
+ 	<li>We send a plan and a price within a week.</li>
+ 	<li>We make it, and keep you posted along the way.</li>
+</ol>', [ 'anchor' => 'services' ] ),
+		$buttons( [ $button( 'Ask for a price', 'solid' ), $button( 'Read about us', 'outline', '#about' ) ] ),
+		$rich_text( 'About us', '<p>Started in a spare room, now a small team. We still answer every message ourselves.</p>
+
+<blockquote>They listened, then made exactly what we had in mind, only better.</blockquote>', [ 'anchor' => 'about', 'background' => 'subtle' ] ),
+		$hero( 'Ready to start?', [
+			'eyebrow'      => '',
+			'intro'        => 'Say hello and tell us about your project.',
+			'background'   => 'accent',
+			'width'        => 'full',
+			'hero_buttons' => [ $button( 'Get in touch', 'solid' ), $button( 'Email us', 'outline', 'mailto:hello@example.com' ) ],
+		] ),
+	], $example_id );
+	WP_CLI::log( 'Example Site (page ' . $example_id . '): starter content added' );
+} else {
+	WP_CLI::log( 'Example Site (page ' . $example_id . '): left as it is (' . count( get_field( 'field_rs_sections', $example_id ) ) . ' sections)' );
 }
 WP_CLI::success( 'Component test pages and the test menu are ready.' );

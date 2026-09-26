@@ -66,7 +66,7 @@ for (const brand of ['', 'forest', 'terracotta', 'harbour', 'plum', 'monochrome'
     const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
     return [...document.querySelectorAll('.hero--photo')].map((h) => {
       const tint = getComputedStyle(h.querySelector('.hero__media'), '::after').backgroundColor; // colour with alpha
-      const texts = [...h.querySelectorAll('.hero__eyebrow, .hero__heading, .hero__intro, .button--secondary')];
+      const texts = [...h.querySelectorAll('.hero__eyebrow, .hero__heading, .hero__intro, .button--outline, .button--text')];
       let worst = 99, where = '';
       for (const P of extremes) {
         // composite the tint over the photo pixel on a canvas
@@ -90,7 +90,7 @@ await p.evaluate(axeSource);
 const axeRes = await p.evaluate(async () => { const r = await axe.run(document.querySelectorAll('.hero'), { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] }); return { v: r.violations.map((v) => `${v.id}: ${v.nodes.length}`), inc: r.incomplete.map((v) => `${v.id}: ${v.nodes.length}`) }; });
 check('axe scan of all Heroes', axeRes.v.length === 0, axeRes.v.join(', ') || `no violations; needs a human: ${axeRes.inc.join(', ') || 'nothing'}`);
 const alts = await p.evaluate(() => [...document.querySelectorAll('.hero__media img')].map((i) => `${i.closest('.hero').querySelector('.hero__heading').textContent.slice(6, 40)}: alt="${i.alt}"`));
-// Decorative photos must have alt=""; the described one uses the Media Library's alt text (penrice has none yet).
+// Decorative photos must have alt=""; the described one uses the Media Library's alt text (the real test photo may have none).
 const decorativeOk = alts.filter((a) => !a.includes('on Accent')).every((a) => a.endsWith('alt=""'));
 check('photos are decorative unless "Describe the photo" is on', decorativeOk, alts.join(' | '));
 const newTab = await p.evaluate(() => { const a = [...document.querySelectorAll('.hero .button')].find((x) => x.target === '_blank'); return a && a.rel.includes('noopener') && a.textContent.includes('(opens in a new tab)'); });

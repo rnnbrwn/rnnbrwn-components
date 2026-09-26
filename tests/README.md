@@ -15,6 +15,7 @@ cd platform/rnnbrwn-components/tests && npm install && npm run all
 | `test-pages.mjs` | The Navigation menu reaches the overview and every component page (desktop and phone); each page shows only its component |
 | `navigation.mjs` | Navigation: full-screen menu on phones, page behind inert and scroll-locked, keyboard (Tab, Escape), closing, reduced motion, no JavaScript, axe scans |
 | `hero.mjs` | Hero: layout unchanged on every surface and theme, photos fill and stay on screen, worst-case text contrast over photos, axe, alt text, buttons, lazy loading |
+| `buttons.mjs` | Buttons: layout unchanged on every surface and theme, 44px targets, wrapping, text and border contrast at rest and on hover (every surface × theme), automatic arrows, new tabs, keyboard order and focus, reduced motion, no JavaScript, axe |
 | `theme-contrast.mjs` | Every theme × surface × colour role (text, muted, link, button, card, photo) is at least 4.5:1 |
 
 Each prints `PASS`/`FAIL` lines; screenshots go to `tests/shots/` (not committed). Add a script for

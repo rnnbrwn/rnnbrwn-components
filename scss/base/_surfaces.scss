@@ -20,6 +20,7 @@ $surfaces: (light, subtle, accent, dark);
   --color-on-accent: var(--brand-on-accent);
   --muted-strength: 70%;
   --tint-strength: 80%;
+  --color-shadow: var(--brand-dark);
 }
 
 .surface-subtle {
@@ -29,6 +30,7 @@ $surfaces: (light, subtle, accent, dark);
   --color-on-accent: var(--brand-on-accent);
   --muted-strength: 70%;
   --tint-strength: 80%;
+  --color-shadow: var(--brand-dark);
 }
 
 // On a mid-tone accent even the full text colour only just passes the 4.5:1 contrast
@@ -44,6 +46,7 @@ $surfaces: (light, subtle, accent, dark);
   --color-on-accent: var(--brand-accent);
   --muted-strength: 100%;
   --tint-strength: 90%;
+  --color-shadow: var(--brand-dark);
 }
 
 .surface-dark {
@@ -53,6 +56,10 @@ $surfaces: (light, subtle, accent, dark);
   --color-on-accent: var(--brand-on-accent-on-dark);
   --muted-strength: 70%;
   --tint-strength: 80%;
+  // Shadows on Dark are a much deeper version of the dark colour, and stronger, so they
+  // still show against it.
+  --color-shadow: color-mix(in oklab, var(--brand-dark) 25%, black);
+  --shadow-strength: 2.5;
   color-scheme: dark; // dark scrollbars and form controls
 }
 
@@ -82,6 +89,11 @@ $surfaces: (light, subtle, accent, dark);
   --color-muted: color-mix(in oklab, var(--color-text) var(--muted-strength), var(--color-bg));
   --color-border: color-mix(in oklab, var(--color-text) 18%, var(--color-bg));
   --color-card: color-mix(in oklab, var(--color-text) 6%, var(--color-bg));
+  // A soft shadow that lifts something slightly (e.g. a button on hover), in --color-shadow:
+  // the brand's dark colour, or a deeper, stronger (--shadow-strength) version on the Dark surface.
+  --shadow-raised:
+    0 0.0625rem 0.125rem color-mix(in oklab, var(--color-shadow) calc(20% * var(--shadow-strength, 1)), transparent),
+    0 0.375rem 1rem -0.25rem color-mix(in oklab, var(--color-shadow) min(100%, calc(35% * var(--shadow-strength, 1))), transparent);
 }
 
 .surface-light,

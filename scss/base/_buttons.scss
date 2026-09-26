@@ -1,12 +1,14 @@
-// Buttons: <a class="button"> (solid, the accent colour) and .button--secondary (outline).
-// Global, so any component or page can use them; colours come from the roles, so they
-// work on every surface (on Accent the solid button reverses to the on-accent colour).
+// Buttons (the Button component, src/Button.astro): <a class="button"> is Solid (the accent
+// colour), .button--outline and .button--text (a plain link) are the other two styles; the
+// names match the Style choices in WordPress. Global, so any component or page can use them;
+// colours come from the roles, so they work on every surface (on Accent the solid button
+// reverses to the on-accent colour). Every style is at least --tap-target tall.
 
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2xs);
+  gap: 0.4em;
   min-block-size: var(--tap-target);
   padding: var(--space-2xs) var(--space-m);
   border: 2px solid var(--color-accent);
@@ -19,17 +21,23 @@
   text-decoration: none;
   transition:
     background-color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out);
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 
+  // Solid and Outline never underline: on hover the fill shifts slightly and the button lifts
+  // with a soft shadow, which drops again while it's pressed.
   &:hover {
     background-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
     border-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
+    box-shadow: var(--shadow-raised);
+  }
+
+  &:active {
+    box-shadow: none;
   }
 }
 
-.button--secondary {
+.button--outline {
   border-color: currentColor;
   background-color: transparent;
   color: var(--color-text);
@@ -38,4 +46,40 @@
     border-color: currentColor;
     background-color: var(--color-card);
   }
+}
+
+// A plain link, for low-key actions ("Read more"). Coloured like links in text, with no box;
+// the padding is kept at the ends only for the focus outline, so it lines up with other text.
+.button--text {
+  padding-inline: 0;
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+
+  &:hover {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+    text-decoration-thickness: 2px;
+  }
+}
+
+// The automatic arrows: → on text links, ↗ for other websites and new tabs. They nudge in
+// their direction on hover (a step, not a slide, with reduced motion: the duration tokens are 0).
+.button__icon {
+  flex-shrink: 0;
+  inline-size: 1em;
+  block-size: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate var(--duration-fast) var(--ease-out);
+
+  .button:hover &--next { translate: 0.2em 0; }
+  .button:hover &--out { translate: 0.12em -0.12em; }
 }

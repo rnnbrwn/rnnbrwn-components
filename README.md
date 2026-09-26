@@ -12,8 +12,9 @@ In GraphQL each one is `PageSectionsSections<Name>Layout` on `page.pageSections.
 ## Components
 | Component | ACF layout | What it's for |
 |---|---|---|
-| Hero | `hero` | A page's opening section: eyebrow, heading (the page's `<h1>` when it's the first section), intro and up to two buttons. **Centred** (text only) or **Background image** (photo tinted with the section's colour, left or centred text, a "keep in view" crop point, decorative unless the editor asks for it to be described); **Standard** or **Tall** |
+| Hero | `hero` | A page's opening section: eyebrow, heading (the page's `<h1>` when it's the first section), intro and up to three buttons. **Centred** (text only) or **Background image** (photo tinted with the section's colour, left or centred text, a "keep in view" crop point, decorative unless the editor asks for it to be described); **Standard** or **Tall** |
 | Rich Text | `rich_text` | An optional heading and editor text: paragraphs, subheadings, lists, quotes, links |
+| Buttons | `buttons` | A row of up to three buttons on its own (e.g. after some text), left or centred. The same buttons appear inside other components: see **Buttons** below |
 | Placeholder | `placeholder` | Testing only: a box showing its own settings. Never switch it on for a real site |
 
 ### Site components
@@ -30,11 +31,22 @@ Navigation's links come from either a **WordPress menu** (Appearance → Menus, 
 <main id="main" class="l-page">...</main>
 ```
 
-Buttons anywhere use the shared `.button` / `.button--secondary` styles (`src/Button.astro` renders one from an ACF link field). **This is a stopgap:** buttons will become a component of their own, and once it exists every component that shows buttons (starting with Hero) must use it instead of its own link fields. Until then, reuse `src/Button.astro` rather than styling buttons anew. `<Sections>` tells the first section it's the page's main heading (`main`); pass `mainHeading={false}` on a page that already has an `<h1>`.
+### Buttons
+Buttons are one component used everywhere: any component that shows buttons includes the same fields, so they look and behave the same on every site. Each button is a link (pick a page or type an address; the link text is the label) and a **Style**: **Solid** (the main action), **Outline**, or **Text link** (a plain link, for low-key actions). Up to three per component; they wrap onto new lines when space runs out. Arrows are automatic: a text link gets →, and a link to another website or one that opens in a new tab gets ↗ (new tabs are also announced to screen readers). Every style is at least 44px tall. Solid and Outline are never underlined: on hover their fill shifts slightly and they lift with a soft shadow (`--shadow-raised`, in `--color-shadow`: the brand's Dark colour, or on the Dark surface a much deeper version at 2.5× strength, `--shadow-strength`); a Text link stays underlined.
+
+To give a component buttons:
+- **WordPress:** add `rs_buttons( '<layout>' )` to its fields. It makes a repeater called `<layout>_buttons` (e.g. `hero_buttons`).
+- **Astro:** fetch it with `BUTTONS_FIELDS` (e.g. `` `heroButtons ${BUTTONS_FIELDS}` `` in the registry) and render it with `<ButtonRow buttons={section.heroButtons} cmsUrl={cmsUrl} align="left" />`. `Button.astro` renders a single one. Both are exported for a site's own pages (`@rnnbrwn/components/ButtonRow.astro`).
+- **Styles:** `.button`, `.button--outline`, `.button--text` in `scss/base/_buttons.scss`. Never write new button styles in a component. Over a photo, make text links use `--color-text` (the accent isn't readable enough there; see Hero).
+
+`<Sections>` tells the first section it's the page's main heading (`main`); pass `mainHeading={false}` on a page that already has an `<h1>`.
 
 Photos behind text are tinted with the section's colour at `--tint-strength` (80%, Accent 90%), chosen so text passes 4.5:1 even over pure white or black. With a mid-tone accent (e.g. white on pink at 4.6:1), Accent over a photo can still fall just short: prefer Light, Subtle or Dark over photos for such brands.
 
 Editor text in any component uses `rs_editor()` in WordPress (a trimmed toolbar: subheadings, bold, italic, lists, quote, link; pasted text arrives as plain text) and `<div class="prose" set:html={editorHtml(html, cmsUrl)} />` in Astro, which styles it and turns links to the CMS's own pages into site links.
+
+## Example Site
+rnnbrwn.xyz/components/example-site/ is a realistic page built from the components (the WordPress page **Pages → Components → Example Site**), second in the test menu. It has no test header (title, intro, preview switches), and its first Hero is the page's `<h1>`, as on a real site; the theme picked on the other test pages still applies. Add each new component to it in wp-admin once it's built. The seed only fills it with starter content while it has no sections, so edits made in WordPress are never overwritten; to start it again, remove all its sections and re-run the seed.
 
 ## Using it in a site
 1. Install: `npm install github:rnnbrwn/rnnbrwn-components#<version>` (while developing: `npm install ../../platform/rnnbrwn-components`, which links the local folder).

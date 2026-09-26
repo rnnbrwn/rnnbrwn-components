@@ -1,0 +1,44 @@
+---
+// A row of buttons from a component's buttons field (rs_buttons in WordPress: up to three,
+// each a link and a style). The one way components show buttons: fetch the field with
+// BUTTONS_FIELDS (graphql.ts) and pass it here. They wrap onto new lines when space runs out.
+// Renders nothing when there are no buttons with a link.
+import Button, { type ButtonStyle } from './Button.astro';
+import { choice } from './settings';
+
+export type ButtonsField = {
+  link: { title: string | null; url: string | null; target: string | null } | null;
+  style: string[] | null;
+}[] | null | undefined;
+
+interface Props {
+  buttons: ButtonsField;
+  cmsUrl?: string;
+  align?: 'left' | 'centre';
+  class?: string;
+}
+
+const { buttons, cmsUrl, align = 'left', class: className } = Astro.props;
+const items = (buttons ?? []).filter((button) => button?.link?.url);
+---
+
+{items.length > 0 && (
+  <div class:list={['button-row', align === 'centre' && 'button-row--centre', className]}>
+    {items.map((button) => (
+      <Button link={button.link} style={choice(button.style, 'solid') as ButtonStyle} cmsUrl={cmsUrl} />
+    ))}
+  </div>
+)}
+
+<style>
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-s);
+  }
+
+  .button-row--centre {
+    justify-content: center;
+  }
+</style>

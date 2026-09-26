@@ -9,6 +9,8 @@
     ".": "./integration.mjs",
     "./Sections.astro": "./src/Sections.astro",
     "./Navigation.astro": "./src/Navigation.astro",
+    "./Button.astro": "./src/Button.astro",
+    "./ButtonRow.astro": "./src/ButtonRow.astro",
     "./graphql": "./src/graphql.ts",
     "./scss/*": "./scss/*"
   },

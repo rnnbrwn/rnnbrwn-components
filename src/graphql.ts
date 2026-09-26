@@ -1,7 +1,7 @@
 import { components, type ComponentName } from './registry';
 import { SETTINGS_FIELDS, PAGE_SETTINGS_FIELDS } from './settings';
 
-export { choice, pageSurface, SURFACES, type SectionSettings, type Surface } from './settings';
+export { BUTTONS_FIELDS, choice, pageSurface, SURFACES, type SectionSettings, type Surface } from './settings';
 export type { ComponentName };
 
 /** GraphQL type of a component: card_grid -> PageSectionsSectionsCardGridLayout */

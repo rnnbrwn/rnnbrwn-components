@@ -6,9 +6,10 @@
   "scripts": {
     "navigation": "node navigation.mjs",
     "hero": "node hero.mjs",
+    "buttons": "node buttons.mjs",
     "test-pages": "node test-pages.mjs",
     "theme-contrast": "node theme-contrast.mjs",
-    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node theme-contrast.mjs"
+    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node buttons.mjs && node theme-contrast.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",

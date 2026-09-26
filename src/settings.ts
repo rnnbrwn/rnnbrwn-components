@@ -17,6 +17,12 @@ export const choice = (value: Choice | undefined, fallback: string) => value?.[0
 
 export const SETTINGS_FIELDS = 'width spacing background anchor';
 
+/**
+ * What to fetch for a component's buttons field (rs_buttons in WordPress), for ButtonRow.astro:
+ * e.g. `heroButtons ${BUTTONS_FIELDS}`.
+ */
+export const BUTTONS_FIELDS = '{ link { title url target } style }';
+
 // ---------- Page settings (the "Page settings" box in the page's sidebar) ----------
 
 export const SURFACES = ['light', 'subtle', 'accent', 'dark'] as const;
