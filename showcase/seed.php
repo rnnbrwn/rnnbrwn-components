@@ -27,14 +27,15 @@ $component_pages = [
 	'rich_text'   => $test_page( 'rich-text', 'Rich Text', $id, 2 ),
 	'card_grid'   => $test_page( 'card-grid', 'Card Grid', $id, 3 ),
 	'media_text'  => $test_page( 'media-text', 'Media Text', $id, 4 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 5 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 6 ),
+	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 6 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 7 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
 // parts sit under "Parts", a page of its own (/components/parts/) that lists them.
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 7 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 8 );
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -457,6 +458,45 @@ $sections_media_text = [
 	$media_text( '', [ 'eyebrow' => '', 'body' => '<p>No eyebrow, heading or buttons: just text beside the image.</p>', 'media_text_buttons' => [], 'image_side' => 'right' ] ),
 ];
 
+// ---------- Accordion ----------
+$accordion_item  = fn( $title, $body ) => [ 'title' => $title, 'body' => $body ];
+$accordion_items = [
+	$accordion_item( 'How long does a project take?', '<p>Usually two to four weeks from the first conversation. We\'ll give you a date before we start.</p>' ),
+	$accordion_item( 'What does it cost?', '<p>It depends on the size of the job. After a short chat we send a fixed price, so there are no surprises.</p>
+
+<ul>
+ 	<li>Small jobs: a single price</li>
+ 	<li>Bigger jobs: paid in stages</li>
+</ul>' ),
+	$accordion_item( 'A much longer question, to check that a title wraps neatly onto a second line beside the icon on narrow screens?', '<p>The answer can have <a href="' . home_url( '/contact/' ) . '">links</a>, <strong>bold text</strong> and lists, like any editor text.</p>
+
+<h3>A subheading</h3>
+<p>And more than one paragraph.</p>' ),
+	$accordion_item( 'Do you work outside the area?', '<p>Sometimes. <a href="https://example.com" target="_blank" rel="noopener">Ask us</a> and we\'ll see what we can do.</p>' ),
+];
+$accordion = fn( $heading, $settings = [] ) => $section( 'accordion', [
+	'eyebrow'           => 'Section eyebrow',
+	'heading'           => $heading,
+	'intro'             => 'An optional intro under the heading, saying what the items are.',
+	'accordion_items'   => $accordion_items,
+	'accordion_buttons' => [ $button( 'Ask a question', 'outline' ) ],
+	'opening'           => 'several',
+	'first_open'        => 0,
+	'layout'            => 'stacked',
+], $settings );
+
+$sections_accordion = [
+	$accordion( 'Accordion: several open at once', [ 'anchor' => 'accordion' ] ),
+	$accordion( 'Accordion: one at a time, first item open', [ 'opening' => 'one', 'first_open' => 1, 'intro' => 'Opening an item closes the one that was open.' ] ),
+	$accordion( 'Accordion: heading beside the items', [ 'layout' => 'beside', 'width' => 'wide', 'intro' => 'On wider screens the heading, intro and buttons sit in a column on the left.', 'accordion_buttons' => [ $button( 'Get in touch', 'solid' ), $button( 'All questions', 'text' ) ] ] ),
+	$accordion( 'Accordion: narrow, on Surface', [ 'width' => 'narrow', 'background' => 'surface', 'first_open' => 1 ] ),
+	$accordion( 'Accordion: on Brand, one at a time', [ 'background' => 'brand', 'opening' => 'one', 'first_open' => 1 ] ),
+	$accordion( 'Accordion: on Accent', [ 'background' => 'accent', 'first_open' => 1, 'eyebrow' => '' ] ),
+	$accordion( 'Accordion: beside, full width, on Black', [ 'layout' => 'beside', 'width' => 'full', 'background' => 'black', 'first_open' => 1, 'accordion_buttons' => [ $button( 'Main button', 'solid' ) ] ] ),
+	$accordion( 'Accordion: beside, but in a narrow section', [ 'layout' => 'beside', 'width' => 'narrow', 'intro' => 'Too narrow for two columns, so it stays stacked.' ] ),
+	$accordion( '', [ 'eyebrow' => '', 'intro' => '', 'accordion_buttons' => [], 'accordion_items' => array_slice( $accordion_items, 0, 2 ) ] ),
+];
+
 $sections_placeholder = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
@@ -490,6 +530,7 @@ $rows = [
 	'rich_text'   => $sections_rich_text,
 	'card_grid'   => $sections_card_grid,
 	'media_text'  => $sections_media_text,
+	'accordion'   => $sections_accordion,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections_placeholder,
 ];

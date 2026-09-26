@@ -1,6 +1,7 @@
 // Every component in the library. The key is its ACF layout name, matching
 // rnnbrwn-themes/rnnbrwn-base/sections/components/<name with dashes>.php;
 // `fields` is what to fetch from GraphQL, on top of the shared settings.
+import Accordion from './components/Accordion.astro';
 import Buttons from './components/Buttons.astro';
 import CardGrid from './components/CardGrid.astro';
 import Hero from './components/Hero.astro';
@@ -22,6 +23,10 @@ export const components = {
   media_text: {
     component: MediaText,
     fields: `image ${IMAGE} eyebrow heading body mediaTextButtons ${BUTTONS_FIELDS} imageSide imageShape focus split textAlignment`,
+  },
+  accordion: {
+    component: Accordion,
+    fields: `eyebrow heading intro accordionItems { title body } accordionButtons ${BUTTONS_FIELDS} opening firstOpen layout`,
   },
   buttons: { component: Buttons, fields: `buttonsButtons ${BUTTONS_FIELDS} alignment` },
   placeholder: { component: Placeholder, fields: 'heading note' },

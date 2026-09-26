@@ -1,0 +1,218 @@
+---
+// Accordion: an optional eyebrow, heading and intro, a list of items that open and close (each a
+// title and editor text), then up to three buttons. Good for FAQs. The editor picks whether
+// several items can be open at once or only one ("Opening"), whether the first starts open, and
+// the layout: the heading above the items, or beside them once the section is at least lg (50rem)
+// wide, with the buttons under the heading.
+// WordPress half: rnnbrwn-base/sections/components/accordion.php
+//
+// Each item is a native <details>/<summary>: it opens with a click, Enter or Space, screen
+// readers announce it as expanded or collapsed, the browser's find-in-page opens it, and it
+// works without JavaScript. "One at a time" gives the items a shared `name`, which makes the
+// browser close the others (older browsers let several open instead). The + / − icon is drawn
+// in CSS and hidden from screen readers. Titles aren't headings: a heading inside <summary>
+// loses its meaning in some screen readers.
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import { editorHtml } from '../html';
+import { choice, type ButtonsField, type Choice, type SectionSettings } from '../settings';
+
+interface Item {
+  title: string | null;
+  body: string | null;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    accordionItems: Item[] | null;
+    accordionButtons: ButtonsField;
+    opening: Choice;
+    firstOpen: boolean | null;
+    layout: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const items = (section.accordionItems ?? []).filter((item) => item?.title);
+const hasHeader = Boolean(section.eyebrow || section.heading || section.intro);
+const hasButtons = (section.accordionButtons ?? []).some((button) => button?.link?.url);
+// Beside needs something to put beside the items.
+const beside = choice(section.layout, 'stacked') === 'beside' && (hasHeader || hasButtons);
+// "One at a time": the items share a name, unique to this section.
+const group =
+  choice(section.opening, 'several') === 'one' ? `accordion-${Math.random().toString(36).slice(2, 10)}` : undefined;
+---
+
+<Section section={section} class:list={['accordion', beside ? 'accordion--beside' : 'accordion--stacked']}>
+  <div class="accordion__inner">
+    <div class="accordion__grid">
+      {hasHeader && (
+        <div class="accordion__header">
+          {section.eyebrow && <p class="eyebrow accordion__eyebrow">{section.eyebrow}</p>}
+          {section.heading && <h2 class="accordion__heading">{section.heading}</h2>}
+          {section.intro && <p class="accordion__intro">{section.intro}</p>}
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div class="accordion__items">
+          {items.map((item, index) => {
+            const body = editorHtml(item.body, cmsUrl, Astro.site);
+            return (
+              <details class="accordion__item" name={group} open={Boolean(section.firstOpen) && index === 0}>
+                <summary class="accordion__summary">
+                  <span class="accordion__title">{item.title}</span>
+                  <span class="accordion__icon" aria-hidden="true" />
+                </summary>
+                {body && <div class="prose accordion__body" set:html={body} />}
+              </details>
+            );
+          })}
+        </div>
+      )}
+
+      <ButtonRow buttons={section.accordionButtons} cmsUrl={cmsUrl} class="accordion__buttons" />
+    </div>
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // The container the layout measures, on an inner wrapper (not the section: a full-width
+  // section is a subgrid of the page grid, and a container query can't style its own container).
+  .accordion__inner {
+    container-type: inline-size;
+  }
+
+  // Stacked: header, items, buttons.
+  .accordion__grid {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5);
+  }
+
+  .accordion--stacked .accordion__grid > :global(.accordion__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+
+  // Beside: the header and buttons in a column on the left, the items on the right.
+  @include cq(lg) {
+    .accordion--beside .accordion__grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      grid-template-rows: auto 1fr; // extra height (from long items) goes below the buttons
+      gap: var(--line) var(--space-xl);
+      align-items: start;
+    }
+
+    .accordion--beside .accordion__header { grid-column: 1; grid-row: 1; }
+    .accordion--beside .accordion__grid > :global(.accordion__buttons) { grid-column: 1; grid-row: 2; }
+    .accordion--beside .accordion__items { grid-column: 2; grid-row: 1 / span 2; }
+  }
+
+  // ---------- Header ----------
+  .accordion__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .accordion__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .accordion__intro {
+    font-size: var(--step-1);
+  }
+
+  // ---------- Items ----------
+  // A rule above the first item and below each one.
+  .accordion__items {
+    border-block-start: 1px solid var(--color-border);
+    interpolate-size: allow-keywords; // lets the open height animate to "auto"
+  }
+
+  .accordion__item {
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  // The title row: at least a tap target tall, the icon on the right lined up with its first line.
+  .accordion__summary {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-s);
+    min-block-size: var(--tap-target);
+    padding-block: calc(var(--line) / 2);
+    font-family: var(--font-heading);
+    font-size: var(--step-1);
+    font-weight: 600;
+    @include snap-leading(1.3);
+    cursor: pointer;
+    list-style: none; // no built-in triangle
+
+    &::-webkit-details-marker { display: none; }
+
+    &:hover .accordion__title {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.15em;
+    }
+  }
+
+  .accordion__title {
+    max-inline-size: var(--measure);
+    text-wrap: pretty;
+  }
+
+  // + when closed, − when open: two bars in the primary colour; the upright one turns flat.
+  .accordion__icon {
+    position: relative;
+    flex: none;
+    inline-size: 0.75em;
+    block-size: 1lh;
+    color: var(--color-primary);
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      inset-block-start: 50%;
+      block-size: 2px;
+      margin-block-start: -1px;
+      border-radius: 1px;
+      background-color: currentColor;
+      transition: rotate var(--duration-base) var(--ease-out);
+    }
+
+    &::after { rotate: 90deg; }
+  }
+
+  .accordion__item[open] .accordion__icon::after { rotate: 180deg; }
+
+  // The text: a line below it before the next item's rule.
+  .accordion__body {
+    padding-block-end: var(--line);
+  }
+
+  // Opening and closing slide rather than snap, where the browser can animate <details>
+  // (elsewhere it simply opens). The durations are 0 for people who ask for reduced motion.
+  .accordion__item::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size var(--duration-base) var(--ease-out),
+      content-visibility var(--duration-base) allow-discrete;
+  }
+
+  .accordion__item[open]::details-content {
+    block-size: auto;
+  }
+</style>

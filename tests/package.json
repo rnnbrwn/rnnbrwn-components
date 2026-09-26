@@ -8,12 +8,13 @@
     "hero": "node hero.mjs",
     "card-grid": "node card-grid.mjs",
     "media-text": "node media-text.mjs",
+    "accordion": "node accordion.mjs",
     "buttons": "node buttons.mjs",
     "footer": "node footer.mjs",
     "test-pages": "node test-pages.mjs",
     "theme-contrast": "node theme-contrast.mjs",
     "rhythm": "node rhythm.mjs",
-    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node buttons.mjs && node footer.mjs && node theme-contrast.mjs && node rhythm.mjs"
+    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node accordion.mjs && node buttons.mjs && node footer.mjs && node theme-contrast.mjs && node rhythm.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",
