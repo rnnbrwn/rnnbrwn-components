@@ -11,6 +11,7 @@ interface Props {
 const { section } = Astro.props;
 const settings = [
   ['Width', choice(section.width, 'content')],
+  ...(choice(section.width, 'content') === 'full' ? [['Content width', choice(section.contentWidth, 'content')]] : []),
   ['Spacing', choice(section.spacing, 'm')],
   ['Background', choice(section.background, 'page')],
   ['Anchor', section.anchor || '–'],

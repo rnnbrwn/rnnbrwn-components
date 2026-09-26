@@ -7,6 +7,7 @@ export type Choice = string[] | null;
 export interface SectionSettings {
   __typename: string;
   width: Choice;
+  contentWidth?: Choice;
   spacing: Choice;
   background: Choice;
   anchor: string | null;
@@ -15,7 +16,20 @@ export interface SectionSettings {
 /** First value of a dropdown field, or a fallback if it's empty. */
 export const choice = (value: Choice | undefined, fallback: string) => value?.[0] || fallback;
 
-export const SETTINGS_FIELDS = 'width spacing background anchor';
+export const SETTINGS_FIELDS = 'width contentWidth spacing background anchor';
+
+/**
+ * The lane a section's content lines up with: its Width, or for a full-width section its
+ * Content width (the background runs edge to edge, the content stays in this lane).
+ */
+export function contentLane(section: SectionSettings): 'narrow' | 'content' | 'wide' {
+  const width = choice(section.width, 'content');
+  const lane = width === 'full' ? choice(section.contentWidth, 'content') : width;
+  return lane === 'narrow' || lane === 'wide' ? lane : 'content';
+}
+
+/** How wide a section's content lane can get, in rem (for images' `sizes`). */
+export const LANE_REM = { narrow: 40, content: 60, wide: 80 } as const;
 
 /**
  * What to fetch for a component's buttons field (rs_buttons in WordPress), for ButtonRow.astro:

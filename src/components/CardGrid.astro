@@ -14,7 +14,7 @@
 import Section from '../Section.astro';
 import ButtonRow, { type ButtonsField } from '../ButtonRow.astro';
 import { linkTarget } from '../html';
-import { choice, type SectionSettings } from '../settings';
+import { choice, contentLane, LANE_REM, type SectionSettings } from '../settings';
 
 type Link = { title: string | null; url: string | null; target: string | null } | null;
 
@@ -52,7 +52,7 @@ const cards = (section.cardGridCards ?? []).filter((card) => card?.heading);
 
 // Which image size the browser should pick: a share of the section's lane, or the whole
 // screen on phones (one column).
-const lane = { narrow: 40, content: 60, wide: 80, full: 60 }[choice(section.width, 'content')] ?? 60;
+const lane = LANE_REM[contentLane(section)];
 const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane / columns)}rem, (min-width: 30rem) 50vw, 100vw`;
 // A last card that fills its row can be the whole lane wide.
 const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;

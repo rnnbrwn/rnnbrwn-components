@@ -54,7 +54,7 @@ const grids = () => p.evaluate(() => [...document.querySelectorAll('.card-grid')
 }));
 
 // Expected columns at 1440px for each grid (by its seed heading), and at 375px always 1.
-const WIDE = { '4 cards in 3 columns': 3, '5 cards in 3 columns': 3, '6 cards in 4 columns': 4, 'row is already full': 3, '3 columns, Panel': 3, '3 columns, Plain': 3, '2 columns, narrow': 2, '4 columns, wide': 4, '4 columns, Plain, full': 4, '4 columns, Panel, on Dark': 4, 'Text only': 3, 'one card': 1 };
+const WIDE = { '4 cards in 3 columns': 3, '5 cards in 3 columns': 3, '6 cards in 4 columns': 4, 'row is already full': 3, '3 columns, Panel': 3, '3 columns, Plain': 3, '2 columns, narrow': 2, '4 columns, wide': 4, '4 columns, Plain, full': 4, '4 columns, Panel, on Dark': 4, 'Text only': 3, 'one card': 1, 'wide content': 4 };
 const expectAt1440 = (name) => Object.entries(WIDE).find(([k]) => name.includes(k))?.[1];
 
 for (const w of [375, 800, 1440]) {

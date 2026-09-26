@@ -3,9 +3,9 @@
 // places the component in its width lane of the page grid, and sets its spacing,
 // surface (the Background setting) and anchor. "Same as the page" (the default) adds no
 // surface, so the section follows the page's; a surface matching the page blends in, and a
-// different one becomes a panel. A full-width section keeps its content in the content lane
-// unless `bleed` is set (for things that should run edge to edge, like a big image).
-import { choice, type SectionSettings } from './settings';
+// different one becomes a panel. A full-width section keeps its content in the lane chosen as
+// its Content width (Narrow, Content or Wide) unless `bleed` is set (for things that should run edge to edge, like a big image).
+import { choice, contentLane, type SectionSettings } from './settings';
 
 interface Props {
   section: SectionSettings;
@@ -28,7 +28,7 @@ const anchor =
   id={anchor}
   data-width={width}
   data-space={choice(section.spacing, 'm')}
-  data-inner={width === 'full' && !bleed ? 'content' : undefined}
+  data-inner={width === 'full' && !bleed ? contentLane(section) : undefined}
 >
   <slot />
 </Tag>

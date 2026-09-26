@@ -10,7 +10,7 @@ const check = (name, pass, detail = '') => results.push(`${pass ? 'PASS' : 'FAIL
 // The Example Site is a real-looking page (its first Hero is the <h1>), not one component's test versions.
 const EXAMPLE = 'Example Site';
 // Menu order; Buttons and Placeholder are parts, so they're sub-links of Parts (a dropdown on desktop).
-const expected = { Components: null, [EXAMPLE]: 'example-site', Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', Parts: 'parts', Buttons: 'buttons', Placeholder: 'placeholder' };
+const expected = { Components: null, [EXAMPLE]: 'example-site', Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Parts: 'parts', Buttons: 'buttons', Placeholder: 'placeholder' };
 const PARTS = 'Parts';
 const SUB_LINKS = ['Buttons', 'Placeholder'];
 for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 375, height: 800, isMobile: true, hasTouch: true }]]) {
@@ -48,7 +48,7 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
   if (label === 'desktop') {
     await p.goto(BASE + '/components/', { waitUntil: 'networkidle0' });
     const lists = await p.evaluate(() => [...document.querySelectorAll('.component-list')].map((ul) => [...ul.querySelectorAll('a')].map((a) => a.textContent.trim()).join(', ')));
-    check('overview lists sections and parts separately, with their numbers of test versions', lists[0] === 'Hero, Rich Text, Card Grid' && lists[1] === SUB_LINKS.join(', '), lists.join(' | '));
+    check('overview lists sections and parts separately, with their numbers of test versions', lists[0] === 'Hero, Rich Text, Card Grid, Media Text' && lists[1] === SUB_LINKS.join(', '), lists.join(' | '));
     await p.goto(BASE + '/components/parts/', { waitUntil: 'networkidle0' });
     const parts = await p.evaluate(() => [...document.querySelectorAll('.component-list a')].map((a) => a.textContent.trim()).join(', '));
     check('the Parts page lists the parts', parts === SUB_LINKS.join(', '), parts);
@@ -57,6 +57,30 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
     check('overview links to the Example Site separately', exampleLink === '/components/example-site/', exampleLink);
     await p.screenshot({ path: SHOTS + '/overview-1280.png' });
   }
+  await p.close();
+}
+// Full width with a Content width: the section (and its background) reaches both screen edges,
+// its content is exactly as wide as the chosen lane, centred. At 1440px the lanes are their
+// full widths: narrow 640px, content 960px, wide 1280px.
+{
+  const p = await b.newPage();
+  await p.setViewport({ width: 1440, height: 900 });
+  const LANES = { narrow: 640, content: 960, wide: 1280 };
+  const wrong = [];
+  let count = 0;
+  for (const slug of ['placeholder', 'card-grid', 'media-text']) {
+    await p.goto(`${BASE}/components/${slug}/`, { waitUntil: 'networkidle0' });
+    const found = await p.evaluate(() => [...document.querySelectorAll('main [data-width="full"][data-inner]')].map((s) => {
+      const r = s.getBoundingClientRect(), c = [...s.children].find((k) => getComputedStyle(k).position !== 'absolute').getBoundingClientRect();
+      return { lane: s.dataset.inner, left: r.left, right: r.right, inner: Math.round(c.width), centred: Math.abs((c.left - r.left) - (r.right - c.right)) < 1 };
+    }));
+    for (const f of found) {
+      count++;
+      if (f.left !== 0 || f.right !== 1440 || f.inner !== LANES[f.lane] || !f.centred) wrong.push(`${slug} ${f.lane}: ${f.inner}px`);
+    }
+    if (slug === 'placeholder') check('the Placeholder page has full-width sections with narrow and wide content', ['narrow', 'wide'].every((l) => found.some((f) => f.lane === l)));
+  }
+  check('full-width sections: background edge to edge, content as wide as its Content width', wrong.length === 0 && count > 0, wrong.join('; ') || `${count} sections`);
   await p.close();
 }
 console.log(results.join('\n'));

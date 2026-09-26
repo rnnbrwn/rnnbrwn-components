@@ -121,7 +121,9 @@ await p.setJavaScriptEnabled(false);
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 s = await state(p);
-check('no JavaScript: links shown under the bar, no button, page usable', !s.btnShown && s.visibility === 'visible' && s.rect[3] < 400);
+// Page usable: the links are an ordinary list in the page (not an overlay), with the page after them.
+const flow = await p.evaluate(() => ({ position: getComputedStyle(document.querySelector('.site-nav__menu')).position, below: document.querySelector('main').getBoundingClientRect().top >= document.querySelector('.site-nav__menu').getBoundingClientRect().bottom }));
+check('no JavaScript: links shown under the bar, no button, page usable', !s.btnShown && s.visibility === 'visible' && flow.position === 'static' && flow.below, `menu ${s.rect[3]}px tall, ${flow.position}`);
 await p.close();
 p = await b.newPage();
 await p.setViewport({ width: 375, height: 800 });

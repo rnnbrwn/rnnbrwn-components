@@ -4,6 +4,7 @@
 import Buttons from './components/Buttons.astro';
 import CardGrid from './components/CardGrid.astro';
 import Hero from './components/Hero.astro';
+import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
 import RichText from './components/RichText.astro';
 import { BUTTONS_FIELDS } from './settings';
@@ -19,6 +20,10 @@ export const components = {
   card_grid: {
     component: CardGrid,
     fields: `eyebrow heading intro cardGridCards { image ${IMAGE} eyebrow heading text link { title url target } } cardGridButtons ${BUTTONS_FIELDS} columns lastCard cardStyle`,
+  },
+  media_text: {
+    component: MediaText,
+    fields: `image ${IMAGE} eyebrow heading body mediaTextButtons ${BUTTONS_FIELDS} imageSide imageShape focus split textAlignment`,
   },
   buttons: { component: Buttons, fields: `buttonsButtons ${BUTTONS_FIELDS} alignment` },
   placeholder: { component: Placeholder, fields: 'heading note' },

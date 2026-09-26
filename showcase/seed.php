@@ -26,14 +26,15 @@ $component_pages = [
 	'hero'        => $test_page( 'hero', 'Hero', $id, 1 ),
 	'rich_text'   => $test_page( 'rich-text', 'Rich Text', $id, 2 ),
 	'card_grid'   => $test_page( 'card-grid', 'Card Grid', $id, 3 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 4 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 5 ),
+	'media_text'  => $test_page( 'media-text', 'Media Text', $id, 4 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 5 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 6 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
 // parts sit under "Parts", a page of its own (/components/parts/) that lists them.
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 6 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 7 );
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -357,7 +358,55 @@ $sections_card_grid = [
 	$card_grid( 'Card Grid: last card fills the row, 5 cards in 3 columns, Plain', [ 'intro' => 'The fifth card spans the two columns left; its image stays the height of the others.', 'last_card' => 'fill', 'card_style' => 'plain', 'card_grid_cards' => array_slice( $cards, 0, 5 ), 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: last card fills the row, 6 cards in 4 columns, wide, on Subtle', [ 'intro' => '', 'last_card' => 'fill', 'columns' => '4', 'width' => 'wide', 'background' => 'subtle', 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: last card fills the row, but the row is already full', [ 'intro' => 'Three cards in three columns: nothing to fill, so nothing stretches.', 'last_card' => 'fill', 'card_grid_cards' => array_slice( $cards, 0, 3 ), 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: full width on Subtle, wide content', [ 'columns' => '4', 'width' => 'full', 'content_width' => 'wide', 'background' => 'subtle', 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: one card', [ 'intro' => '', 'card_grid_cards' => [ $cards[0] ], 'card_grid_buttons' => [] ] ),
+];
+
+// ---------- Media Text ----------
+// The card images (wide 2:1, tall 2:3, square) test every shape's crop; the first row uses the
+// real photo when there is one.
+[ $wide_image, $tall_image, $square_image ] = $card_images;
+$media_body = '<p>A paragraph or two beside the image, with <a href="' . home_url( '/contact/' ) . '">a link</a> in it.</p>
+
+<ul>
+ 	<li>A short list</li>
+ 	<li>Of a few points</li>
+</ul>';
+$media_text = fn( $heading, $settings = [] ) => array_merge( [
+	'acf_fc_layout'      => 'media_text',
+	'image'              => $wide_image,
+	'eyebrow'            => 'Section eyebrow',
+	'heading'            => $heading,
+	'body'               => $media_body,
+	'media_text_buttons' => [ $button( 'Main button', 'solid' ), $button( 'Text link', 'text' ) ],
+	'image_side'         => 'left',
+	'image_shape'        => 'original',
+	'focus'              => 'center',
+	'split'              => 'half',
+	'text_alignment'     => 'middle',
+	'width'              => 'content',
+	'spacing'            => 'm',
+	'background'         => 'page',
+	'anchor'             => '',
+], $settings );
+$long_body = $media_body . '
+
+<h3>A subheading</h3>
+<p>More text, so the text column is taller than the image and the Top / Middle / Bottom choice shows. It keeps going for a few lines to make the difference clear on wide screens, where the two sit side by side.</p>
+
+<p>And one more paragraph for good measure.</p>';
+
+$sections_media_text = [
+	$media_text( 'Media Text: image left, half and half, original shape', [ 'anchor' => 'media-text', 'image' => $real_photo ? $real_photo[0]->ID : $wide_image ] ),
+	$media_text( 'Media Text: image right, Landscape crop of a tall image, keep the top', [ 'image_side' => 'right', 'image' => $tall_image, 'image_shape' => 'landscape', 'focus' => 'top' ] ),
+	$media_text( 'Media Text: Square, image wider, on Subtle', [ 'image_shape' => 'square', 'split' => 'image_wider', 'background' => 'subtle' ] ),
+	$media_text( 'Media Text: Portrait, text wider, image right, on Accent', [ 'image_shape' => 'portrait', 'split' => 'text_wider', 'image_side' => 'right', 'background' => 'accent', 'focus' => 'left', 'image' => $square_image ] ),
+	$media_text( 'Media Text: text lined up with the top, wide, on Dark', [ 'text_alignment' => 'top', 'width' => 'wide', 'background' => 'dark', 'body' => $long_body, 'image' => $square_image ] ),
+	$media_text( 'Media Text: text lined up with the bottom, full width, on Dark', [ 'text_alignment' => 'bottom', 'width' => 'full', 'background' => 'dark', 'image_side' => 'right', 'image' => $tall_image, 'media_text_buttons' => [ $button( 'Outline', 'outline' ) ] ] ),
+	$media_text( 'Media Text: full width on Subtle, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'subtle', 'image' => $square_image ] ),
+	$media_text( 'Media Text: long text beside a short image, middle', [ 'body' => $long_body, 'split' => 'text_wider' ] ),
+	$media_text( 'Media Text: narrow', [ 'width' => 'narrow', 'image' => $square_image, 'eyebrow' => '', 'media_text_buttons' => [] ] ),
+	$media_text( '', [ 'eyebrow' => '', 'body' => '<p>No eyebrow, heading or buttons: just text beside the image.</p>', 'media_text_buttons' => [], 'image_side' => 'right' ] ),
 ];
 
 $sections = [
@@ -373,6 +422,8 @@ $sections = [
 	$placeholder( 'Full width, subtle background', [ 'width' => 'full', 'background' => 'subtle' ] ),
 	$placeholder( 'Full width, accent background', [ 'width' => 'full', 'background' => 'accent', 'spacing' => 'l' ] ),
 	$placeholder( 'Full width, dark background', [ 'width' => 'full', 'background' => 'dark' ] ),
+	$placeholder( 'Full width, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'subtle' ], 'The background runs edge to edge; the content lines up with the Narrow lane.' ),
+	$placeholder( 'Full width, wide content', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'subtle' ], 'The content lines up with the Wide lane.' ),
 	$placeholder( 'Spacing: none', [ 'spacing' => 'none', 'background' => 'subtle' ] ),
 	$placeholder( 'Spacing: small', [ 'spacing' => 's', 'background' => 'subtle' ] ),
 	$placeholder( 'Spacing: large', [ 'spacing' => 'l', 'background' => 'subtle' ] ),
@@ -388,6 +439,7 @@ $rows = [
 	'hero'        => $sections_hero,
 	'rich_text'   => $sections_rich_text,
 	'card_grid'   => $sections_card_grid,
+	'media_text'  => $sections_media_text,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections,
 ];
