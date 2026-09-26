@@ -2,7 +2,7 @@
 // Creates (or refreshes) the component test pages shown at rnnbrwn.xyz/components/:
 // a "Components" overview page, one child page per component (/components/hero/ ...) on the
 // Sections template holding test versions of that component, a "Parts" page listing the parts
-// (see $part_names), and the test Navigation menu linking them. Safe to re-run: it updates the pages instead of duplicating them.
+// (see $part_names), the test Navigation menu linking them, and the test Footer and its menus. Safe to re-run: it updates the pages instead of duplicating them.
 // When a component is added to the library, give it a page below and add its test rows.
 //
 // Run from platform/rnnbrwn-cms:
@@ -148,6 +148,70 @@ update_field( 'field_rs_navigation_navigation_sections', [
 ], 'option' );
 update_field( 'field_rs_navigation_background', 'page', 'option' );
 update_field( 'field_rs_navigation_width', 'wide', 'option' );
+
+// ---------- Footer (site-wide: wp-admin → Footer) ----------
+
+// Its two WordPress menus, rebuilt each time. Items: a page (int), or [ title, url, target ];
+// [ item, [ sub-items ] ] puts sub-items under an item (a column in the footer).
+$test_menu = function ( $name, $location, $items ) {
+	$menu = wp_get_nav_menu_object( $name );
+	if ( $menu ) {
+		wp_delete_nav_menu( $menu->term_id );
+	}
+	$menu_id = wp_create_nav_menu( $name );
+	$add     = function ( $item, $parent_item = 0 ) use ( $menu_id ) {
+		$fields = is_int( $item )
+			? [ 'menu-item-object' => 'page', 'menu-item-object-id' => $item, 'menu-item-type' => 'post_type' ]
+			: [ 'menu-item-title' => $item[0], 'menu-item-url' => $item[1], 'menu-item-target' => $item[2] ?? '', 'menu-item-type' => 'custom' ];
+		return wp_update_nav_menu_item( $menu_id, 0, $fields + [ 'menu-item-status' => 'publish', 'menu-item-parent-id' => $parent_item ] );
+	};
+	foreach ( $items as $item ) {
+		if ( is_array( $item ) && is_array( $item[1] ?? null ) ) {
+			$parent_item = $add( $item[0] );
+			foreach ( $item[1] as $sub ) {
+				$add( $sub, $parent_item );
+			}
+		} else {
+			$add( $item );
+		}
+	}
+	set_theme_mod( 'nav_menu_locations', array_merge( (array) get_theme_mod( 'nav_menu_locations' ), [ $location => $menu_id ] ) );
+};
+$section_pages = array_values( array_diff_key( $component_pages, array_flip( $part_names ) ) );
+// Two loose links (the first column, no heading), a column headed by a plain heading (#), one
+// headed by a link (Parts), and one with a link to another website opening in a new tab.
+$test_menu( 'Footer (test)', 'footer_navigation', [
+	$id,
+	$example_id,
+	[ [ 'Sections', '#' ], $section_pages ],
+	[ $parts_id, array_map( fn( $name ) => $component_pages[ $name ], $part_names ) ],
+	[ [ 'Elsewhere', '#' ], [ [ 'Library on GitHub', 'https://github.com/rnnbrwn/rnnbrwn-components', '_blank' ], [ 'ronnie.fyi', 'https://ronnie.fyi/' ] ] ],
+] );
+$test_menu( 'Footer small print (test)', 'footer_small_print', [
+	[ 'Placeholder', '/components/placeholder/' ],
+	[ 'Example Site', '/components/example-site/' ],
+] );
+
+// Full by default; FOOTER_LAYOUT=line tests the Single line layout (see tests/README.md).
+update_field( 'field_rs_footer_layout', getenv( 'FOOTER_LAYOUT' ) === 'line' ? 'line' : 'full', 'option' );
+update_field( 'field_rs_footer_show_copyright', 1, 'option' );
+update_field( 'field_rs_footer_logo', $logo_id, 'option' );
+update_field( 'field_rs_footer_logo_dark', $logo_dark_id, 'option' );
+update_field( 'field_rs_footer_text', 'Test content for the shared component library: the same footer is on every test page.', 'option' );
+update_field( 'field_rs_footer_footer_buttons', [ $button( 'Get in touch', 'outline' ) ], 'option' );
+update_field( 'field_rs_footer_footer_social', array_map( fn( $row ) => [ 'platform' => $row[0], 'url' => $row[1] ], [
+	[ 'bluesky', 'https://bsky.app/profile/ronnie.fyi' ],
+	[ 'mastodon', 'https://mastodon.social/@example' ],
+	[ 'instagram', 'https://www.instagram.com/example/' ],
+	[ 'linkedin', 'https://www.linkedin.com/in/example/' ],
+	[ 'github', 'https://github.com/rnnbrwn' ],
+	[ 'email', 'mailto:hello@example.com' ],
+] ), 'option' );
+update_field( 'field_rs_footer_copyright_name', 'RNNBRWN', 'option' );
+update_field( 'field_rs_footer_copyright_from', 2024, 'option' );
+update_field( 'field_rs_footer_small_print', 'Test pages, not indexed.', 'option' );
+update_field( 'field_rs_footer_background', 'page', 'option' );
+update_field( 'field_rs_footer_width', 'wide', 'option' );
 
 // ---------- Hero ----------
 

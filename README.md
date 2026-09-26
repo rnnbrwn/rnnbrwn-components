@@ -27,12 +27,20 @@ Not page sections: they appear on every page and are edited on their own page in
 | Component | Switch on with | Edited in | What it's for |
 |---|---|---|---|
 | Navigation | `'navigation' => true` | wp-admin → Navigation | The site header: logo (plus an optional one for dark backgrounds) or the site title, and the main links. Below the `md` breakpoint they're behind a menu button that opens them full screen: the page behind is hidden, `inert` and doesn't scroll |
+| Footer | `'footer' => true` | wp-admin → Footer | The site footer: logo (plus an optional one for dark backgrounds) or the site title, a short text, up to three buttons and social links; columns of links; then a line with © years and name, small print and a few small links. On phones it stacks, the columns two side by side. **Layout: Single line** shows only that line of text (no logo, links or columns) |
 
 Navigation's links come from either a **WordPress menu** (Appearance → Menus, "Main navigation" location) or, for one-page sites, **sections picked by their Anchor ID**. Menu items dragged under another become its **sub-links** (one level; deeper ones aren't shown). On wider screens they're a dropdown: the parent stays a link to its own page, and the ▾ button beside it opens the dropdown (click, Enter or Space); hovering opens it too, and it stays a moment (`--hover-grace`) after the pointer leaves. Escape, clicking elsewhere or tabbing out closes it. On small screens the sub-links are listed under their parent, indented. In Astro, add `NAVIGATION_QUERY` to the page's query and put it first in `<body>`; the page's `<main>` needs `id="main"` for its "Skip to content" link:
 
 ```astro
 <Navigation data={data} cmsUrl={import.meta.env.GRAPHQL_URL} />
 <main id="main" class="l-page">...</main>
+```
+
+Footer's links come from two **WordPress menus** (Appearance → Menus). In the **Footer** location, an item with sub-items becomes a column headed by that item (a link, unless its address is `#`: then it's only a heading); items without sub-items are listed together in a first column with no heading. The **Footer small print** location holds a short row of links beside the © line (Privacy, Terms). **Social links** are a platform (Bluesky, Mastodon, Instagram, Threads, Facebook, LinkedIn, X, YouTube, TikTok, GitHub, Spotify, Vimeo, Pinterest, Email, Website) and an address, shown as icons named for screen readers and marked `rel="me"`; the icons are Bootstrap Icons shapes in `src/social-icons.ts`, whose keys must match the Platform choices in `site/footer.php`. **First year** turns "© 2026" into "© 2001–2026"; the current year comes from the build. Untick **Show © and the year** to make the small print the whole line. The **Layout** choice at the top of wp-admin → Footer switches between **Full** and **Single line** (only the © line and small print, in the footer's Width; the Content and Social links tabs are hidden). The footer uses no JavaScript. In Astro, add `FOOTER_QUERY` to the page's query (it can sit beside `NAVIGATION_QUERY`) and put it last in `<body>`:
+
+```astro
+<main id="main" class="l-page">...</main>
+<Footer data={data} cmsUrl={import.meta.env.GRAPHQL_URL} />
 ```
 
 ### Buttons

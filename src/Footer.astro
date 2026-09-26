@@ -1,0 +1,366 @@
+---
+// Footer: the site footer. The logo (or the site title), a short text, buttons and social links
+// on one side; columns of links on the other; then a line with © year and name, the small print
+// and a few small links (Privacy, Terms). On small screens it all stacks, the columns two side
+// by side where they fit, then one.
+// The Single line layout shows only the © line and small print (no logo, columns or links).
+// WordPress half: rnnbrwn-base/sections/site/footer.php (wp-admin → Footer). The links come from
+// WordPress menus (Appearance → Menus): "Footer", where items with sub-items become columns (the
+// item is the heading, a link unless its address is #) and items without are listed together in
+// a first column with no heading; and "Footer small print".
+//
+// Put it last in <body>, after <main>:
+//   <Footer data={data} cmsUrl={import.meta.env.GRAPHQL_URL} />
+//
+// Accessibility: the columns and the small-print links are each a navigation landmark with its
+// own name; column headings are h2s (the footer isn't part of the page's outline); social links
+// are icons with the platform's name for screen readers; every link is a 44px tap target;
+// new-tab links say so; the current page is marked (aria-current). No JavaScript.
+import ButtonRow from './ButtonRow.astro';
+import NewTabNote from './NewTabNote.astro';
+import { linkTarget } from './html';
+import { choice, surfaceClass } from './settings';
+import { SOCIAL_PLATFORMS, type SocialPlatform } from './social-icons';
+import type { FooterData, NavigationMenuItem } from './graphql';
+
+interface Props {
+  data: FooterData;
+  cmsUrl?: string;
+}
+
+const { data, cmsUrl } = Astro.props;
+const footer = data.footerSettings?.footer;
+const siteTitle = data.generalSettings?.title ?? '';
+const width = choice(footer?.width, 'wide');
+const logo = footer?.logo?.node;
+const logoDark = footer?.logoDark?.node;
+
+const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
+const here = trimSlash(Astro.url.pathname);
+
+const toLink = (link: NavigationMenuItem) => {
+  // A menu item with the address # is only a column heading.
+  if (!link.url || link.url === '#') return null;
+  const { attrs, newTab } = linkTarget(link, cmsUrl, Astro.site);
+  // "#contact" typed into a menu means that section of the home page, from any page.
+  const href = attrs.href.startsWith('#') ? `/${attrs.href}` : attrs.href;
+  const current = href.startsWith('/') && !href.includes('#') && trimSlash(href.split('?')[0]) === here;
+  return { title: link.label || href, newTab, attrs: { ...attrs, href, 'aria-current': current ? ('page' as const) : undefined } };
+};
+type Link = NonNullable<ReturnType<typeof toLink>>;
+const isLink = (link: Link | null): link is Link => !!link;
+
+// Columns: each item with sub-items is one, headed by the item; items without any are listed
+// together first, with no heading.
+const menu = data.footerMenu?.nodes ?? [];
+const loose = menu.filter((item) => !item.childItems?.nodes.length).map(toLink).filter(isLink);
+const columns = [
+  ...(loose.length ? [{ heading: null, headingLink: null, links: loose }] : []),
+  ...menu
+    .filter((item) => item.childItems?.nodes.length)
+    .map((item) => ({ heading: item.label, headingLink: toLink(item), links: item.childItems!.nodes.map(toLink).filter(isLink) })),
+];
+
+const smallLinks = (data.footerSmallPrintMenu?.nodes ?? []).map(toLink).filter(isLink);
+
+const social = (footer?.footerSocial ?? []).flatMap((item) => {
+  const platform = choice(item.platform, '') as SocialPlatform;
+  if (!item.url || !(platform in SOCIAL_PLATFORMS)) return [];
+  return [{ ...SOCIAL_PLATFORMS[platform], ...linkTarget({ url: item.url, target: null }, cmsUrl, Astro.site) }];
+});
+
+// "© 2001–2026 Name" (the first year only when it's earlier than this one), unless switched off
+// to leave the small print as the whole line.
+const year = new Date().getFullYear();
+const from = footer?.copyrightFrom ? Math.round(footer.copyrightFrom) : null;
+const years = from && from < year ? `${from}–${year}` : `${year}`;
+const copyright = footer?.showCopyright === false ? '' : `© ${years} ${footer?.copyrightName || siteTitle}`.trim();
+const smallPrint = footer?.smallPrint?.trim() ?? '';
+const line = [copyright, smallPrint].filter(Boolean).join(' ');
+
+const singleLine = footer?.layout === 'line';
+---
+
+{singleLine ? (
+  line && (
+    <footer class:list={['site-footer', 'site-footer--line', surfaceClass(choice(footer?.background, 'page'))]}>
+      <div class="l-page">
+        <p class="site-footer__line" data-width={width} data-space="none">{line}</p>
+      </div>
+    </footer>
+  )
+) : (
+  <footer class:list={['site-footer', surfaceClass(choice(footer?.background, 'page'))]}>
+    <div class="l-page">
+      <div class="site-footer__inner" data-width={width} data-space="none">
+        <div class:list={['site-footer__top', columns.length > 0 && 'site-footer__top--with-links']}>
+          <div class="site-footer__brand">
+            <a class="site-footer__logo" href="/">
+              {logo ? (
+                <>
+                  <img
+                    class:list={[logoDark && 'site-footer__logo--on-light']}
+                    src={logo.sourceUrl}
+                    width={logo.mediaDetails?.width}
+                    height={logo.mediaDetails?.height}
+                    alt={siteTitle}
+                    loading="lazy"
+                  />
+                  {logoDark && (
+                    <img
+                      class="site-footer__logo--on-dark"
+                      src={logoDark.sourceUrl}
+                      width={logoDark.mediaDetails?.width}
+                      height={logoDark.mediaDetails?.height}
+                      alt={siteTitle}
+                      loading="lazy"
+                    />
+                  )}
+                </>
+              ) : (
+                <span>{siteTitle}</span>
+              )}
+            </a>
+
+            {footer?.text && <p class="site-footer__text">{footer.text}</p>}
+
+            <ButtonRow buttons={footer?.footerButtons} cmsUrl={cmsUrl} />
+
+            {social.length > 0 && (
+              <ul class="site-footer__social" aria-label="Social links">
+                {social.map((item) => (
+                  <li>
+                    <a href={item.href} rel="me">
+                      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" set:html={item.icon} />
+                      <span class="visually-hidden">{item.label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {columns.length > 0 && (
+            <nav class="site-footer__columns" aria-label="Footer">
+              {columns.map((column) => (
+                <div class="site-footer__column">
+                  {column.heading && (
+                    <h2 class="site-footer__heading">
+                      {column.headingLink ? (
+                        <a {...column.headingLink.attrs}>{column.heading}<NewTabNote show={column.headingLink.newTab} /></a>
+                      ) : (
+                        column.heading
+                      )}
+                    </h2>
+                  )}
+                  <ul class="site-footer__links">
+                    {column.links.map((link) => (
+                      <li><a {...link.attrs}>{link.title}<NewTabNote show={link.newTab} /></a></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+          )}
+        </div>
+
+        {(line || smallLinks.length > 0) && (
+          <div class="site-footer__bottom">
+            {line && <p>{line}</p>}
+            {smallLinks.length > 0 && (
+              <nav aria-label="Small print">
+                <ul class="site-footer__small-links">
+                  {smallLinks.map((link) => (
+                    <li><a {...link.attrs}>{link.title}<NewTabNote show={link.newTab} /></a></li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </footer>
+)}
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  .site-footer {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  // The footer's own layout sits on this wrapper, measured with container queries, so it follows
+  // the footer's width (Content or Wide), not the screen's.
+  .site-footer__inner {
+    container-type: inline-size;
+    padding-block: var(--space-xl) var(--space-m);
+  }
+
+  .site-footer__top {
+    display: grid;
+    gap: var(--space-xl);
+
+    // Side by side once there's room: the brand area, then the columns (twice as wide).
+    &.site-footer__top--with-links {
+      @include cq(lg) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: var(--space-2xl);
+      }
+    }
+  }
+
+  // ---------- Brand area: logo, short text, buttons, social links ----------
+
+  .site-footer__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-s);
+  }
+
+  .site-footer__logo {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tap-target);
+    font-family: var(--font-heading);
+    font-size: var(--step-1);
+    font-weight: 700;
+    text-decoration: none;
+
+    img {
+      // A site can size its logo with --footer-logo-height (or match Navigation's).
+      block-size: var(--footer-logo-height, var(--navigation-logo-height, var(--space-l)));
+      inline-size: auto;
+    }
+
+    // With a dark-background version, only the one that suits the surface is shown.
+    .site-footer__logo--on-light { display: var(--display-if-light); }
+    .site-footer__logo--on-dark { display: var(--display-if-dark); }
+  }
+
+  .site-footer__text {
+    max-inline-size: 40ch;
+    color: var(--color-muted);
+  }
+
+  .site-footer__social {
+    display: flex;
+    flex-wrap: wrap;
+    // The icons' tap targets are bigger than the icons, so pull the row in to line the first
+    // icon up with the text above.
+    margin-inline-start: calc((var(--tap-target) - var(--space-m)) / -2);
+    padding: 0;
+    list-style: none;
+
+    a {
+      display: grid;
+      place-items: center;
+      inline-size: var(--tap-target);
+      block-size: var(--tap-target);
+      border-radius: var(--radius-m);
+      color: var(--color-text);
+      transition: color var(--duration-fast) var(--ease-out);
+
+      &:hover { color: var(--color-accent); }
+    }
+
+    svg {
+      inline-size: var(--space-m);
+      block-size: var(--space-m);
+      fill: currentColor;
+    }
+  }
+
+  // ---------- Columns of links ----------
+
+  // Two side by side on a phone, up to four beside the brand area on wide screens.
+  .site-footer__columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-2xl) * 2)), 1fr));
+    gap: var(--space-l) var(--space-m);
+  }
+
+  // As tall as a link row, so the rows of neighbouring columns line up.
+  .site-footer__heading {
+    font-family: var(--font-body);
+    font-size: var(--step-0);
+    font-weight: 700;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      text-decoration: none;
+
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  // Without a heading link, the heading's text lines up with the links' text.
+  .site-footer__heading:not(:has(a)) {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--tap-target);
+  }
+
+  .site-footer__links,
+  .site-footer__small-links {
+    padding: 0;
+    list-style: none;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      text-decoration: none;
+
+      &:hover { text-decoration: underline; }
+    }
+
+    [aria-current='page'] {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  }
+
+  .site-footer__links a {
+    color: var(--color-text);
+  }
+
+  // ---------- © line, small print and small links ----------
+
+  // Single line layout: only this line.
+  .site-footer__line {
+    padding-block: var(--space-m);
+    color: var(--color-muted);
+    font-size: var(--step--1);
+  }
+
+  .site-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 var(--space-m);
+    margin-block-start: var(--space-xl);
+    padding-block-start: var(--space-s);
+    border-block-start: 1px solid var(--color-border);
+    color: var(--color-muted);
+    font-size: var(--step--1);
+
+    p {
+      padding-block: var(--space-2xs);
+    }
+  }
+
+  .site-footer__small-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-m);
+
+    a { color: var(--color-muted); }
+  }
+</style>

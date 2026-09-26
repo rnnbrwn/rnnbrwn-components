@@ -1,8 +1,8 @@
 import { components, type ComponentName } from './registry';
-import { SETTINGS_FIELDS, PAGE_SETTINGS_FIELDS } from './settings';
+import { SETTINGS_FIELDS, PAGE_SETTINGS_FIELDS, BUTTONS_FIELDS } from './settings';
 
 export { BUTTONS_FIELDS, choice, pageSurface, SURFACES, type SectionSettings, type Surface } from './settings';
-import type { Choice } from './settings';
+import type { ButtonsField, Choice } from './settings';
 export type { ComponentName };
 
 /** GraphQL type of a component: card_grid -> PageSectionsSectionsCardGridLayout */
@@ -74,4 +74,56 @@ export interface NavigationMenuItem {
   label: string | null;
   url: string | null;
   target: string | null;
+}
+
+/**
+ * What <Footer> needs, to put at the top level of a query (next to page { ... }; it can sit
+ * beside NAVIGATION_QUERY). Only for sites with 'footer' => true in their rnnbrwn_sections settings.
+ */
+export const FOOTER_QUERY = `
+  generalSettings { title }
+  footerSettings {
+    footer {
+      layout
+      logo { node { sourceUrl mediaDetails { width height } } }
+      logoDark { node { sourceUrl mediaDetails { width height } } }
+      text
+      footerButtons ${BUTTONS_FIELDS}
+      footerSocial { platform url }
+      showCopyright
+      copyrightName
+      copyrightFrom
+      smallPrint
+      background
+      width
+    }
+  }
+  footerMenu: menuItems(where: { location: FOOTER_NAVIGATION, parentDatabaseId: 0 }, first: 50) {
+    nodes { label url target childItems(first: 50) { nodes { label url target } } }
+  }
+  footerSmallPrintMenu: menuItems(where: { location: FOOTER_SMALL_PRINT, parentDatabaseId: 0 }, first: 20) {
+    nodes { label url target }
+  }
+`;
+
+export interface FooterData {
+  generalSettings: { title: string };
+  footerSettings: {
+    footer: {
+      layout: string | null;
+      logo: NavigationImage;
+      logoDark: NavigationImage;
+      text: string | null;
+      footerButtons: ButtonsField;
+      footerSocial: { platform: Choice; url: string | null }[] | null;
+      showCopyright: boolean | null;
+      copyrightName: string | null;
+      copyrightFrom: number | null;
+      smallPrint: string | null;
+      background: Choice;
+      width: Choice;
+    } | null;
+  } | null;
+  footerMenu: { nodes: (NavigationMenuItem & { childItems: { nodes: NavigationMenuItem[] } | null })[] } | null;
+  footerSmallPrintMenu: { nodes: NavigationMenuItem[] } | null;
 }

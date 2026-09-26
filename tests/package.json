@@ -9,9 +9,10 @@
     "card-grid": "node card-grid.mjs",
     "media-text": "node media-text.mjs",
     "buttons": "node buttons.mjs",
+    "footer": "node footer.mjs",
     "test-pages": "node test-pages.mjs",
     "theme-contrast": "node theme-contrast.mjs",
-    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node buttons.mjs && node theme-contrast.mjs"
+    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node buttons.mjs && node footer.mjs && node theme-contrast.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",
