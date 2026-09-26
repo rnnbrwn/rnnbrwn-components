@@ -82,7 +82,7 @@ const sizes = laneSizes(section, share);
   // Stacked: the image above the text.
   .media-text__grid {
     display: grid;
-    gap: var(--space-l);
+    gap: var(--line);
   }
 
   .media-text__media {
@@ -130,12 +130,13 @@ const sizes = laneSizes(section, share);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-s);
+    gap: calc(var(--line) / 2);
     min-inline-size: 0;
   }
 
+  // Half a line between the texts, a whole line above the buttons.
   .media-text__content > :global(.media-text__buttons) {
-    margin-block-start: var(--space-2xs);
+    margin-block-start: calc(var(--line) / 2);
   }
 
   // ---------- The image ----------

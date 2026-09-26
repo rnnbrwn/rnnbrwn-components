@@ -3,12 +3,12 @@
 // HTML inserted with set:html. Colours come from the roles, so it works on every surface.
 
 .prose {
-  > * + * { margin-block-start: var(--space-s); }
-
-  // Subheadings: extra room above, and close to the text they introduce.
+  // Spaced in lines of body text (--line): blocks one line apart; subheadings a line and a
+  // half below the text above and half a line from the text they introduce.
   // (A section's own heading is the h2; editors get h3 and h4.)
-  > :is(h2, h3, h4) { margin-block-start: var(--space-l); }
-  > :is(h2, h3, h4) + * { margin-block-start: var(--space-2xs); }
+  > * + * { margin-block-start: var(--line); }
+  > :is(h2, h3, h4) { margin-block-start: calc(var(--line) * 1.5); }
+  > :is(h2, h3, h4) + * { margin-block-start: calc(var(--line) / 2); }
   > :first-child { margin-block-start: 0; }
 
   h2 { font-size: var(--step-3); }
@@ -16,7 +16,7 @@
   h4 { font-size: var(--step-1); }
 
   ul, ol { padding-inline-start: 1.25em; }
-  li + li { margin-block-start: var(--space-3xs); }
+  li + li { margin-block-start: calc(var(--line) / 4); }
   li::marker { color: var(--color-muted); }
 
   // Underlined so a link is recognisable even where the accent matches the text
@@ -36,7 +36,7 @@
     border-inline-start: 3px solid var(--color-accent);
     font-size: var(--step-1);
 
-    > * + * { margin-block-start: var(--space-2xs); }
+    > * + * { margin-block-start: calc(var(--line) / 2); }
   }
 
   strong { font-weight: 700; }

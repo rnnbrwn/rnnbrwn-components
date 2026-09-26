@@ -125,7 +125,7 @@ Muted text is the text colour blended 70% into the background, except on **Accen
 
 ## Sass structure (`scss/`)
 - `settings/` values only: breakpoints, container sizes, width lanes (plus `$card-min`, the narrowest a grid card may get), type and spacing scales, default brand colours. All `!default`.
-- `tools/` mixins and functions: `mq()` (and `mq-below()` for small-screen-only rules), `cq()`, `fluid()`, `type-scale()`, `space-scale()`, token mixins. Outputs no CSS; components use `@use 'tools' as *;`.
+- `tools/` mixins and functions: `mq()` (and `mq-below()` for small-screen-only rules), `cq()`, `fluid()`, `type-scale()`, `space-scale()`, `snap-leading()` (a line-height on the vertical rhythm grid), token mixins. Outputs no CSS; components use `@use 'tools' as *;`.
 - `base/`, `layout/` global CSS: surfaces and panels, reset and typography, the `.l-page` grid, section spacing, `.l-stack`, `.l-cluster`.
 - `rnnbrwn-global.scss` outputs all global CSS and the `:root` custom properties, once per site.
 
@@ -137,7 +137,8 @@ Muted text is the text colour blended 70% into the background, except on **Accen
 - Images that can't recolour can be shown per surface with `display: var(--display-if-light)` / `var(--display-if-dark)`.
 
 ## Rules for components
-1. No raw px, hex or rem values: use `var(--space-*)`, `var(--step-*)`, `var(--color-*)` (roles, never `--brand-*`), `var(--radius-*)`.
+1. No raw px, hex or rem values: use `var(--space-*)`, `var(--step-*)`, `var(--color-*)` (roles, never `--brand-*`), `var(--radius-*)`, `var(--line)`.
+   **Vertical rhythm:** space text in lines of body text, `var(--line)` (24px on phones, 27px on desktop), not the spacing scale: a heading half a line from its own text, blocks of text one line apart, a line and a half before a new group (a subheading, or cards after a section header), a quarter line inside a card. Base styles put every heading, paragraph, list item and quote on a quarter-line grid; a component that sets its own line-height uses `@include snap-leading(<number>)`. The `--space-*` scale is for everything else: section spacing, padding, gaps between cards or buttons, side-by-side columns.
 2. Never set your own width. Wrap the component in `<Section section={section}>`, which places it in the lane chosen in WordPress and applies spacing, surface and anchor. A **Full width** section's background runs edge to edge while its content lines up with its **Content width** (Narrow, Content or Wide; a setting that shows only for Full width). For anything sized from the lane (e.g. an image's `sizes`), use `contentLane(section)` and `LANE_REM` from `settings.ts`, never the Width field alone.
 3. Page-level layout uses `mq()`; layout inside a component uses `cq()` (the element being measured gets `container-type: inline-size`).
 4. A repeater field needs a name unique across all components (`card_grid_items`, not `items`).

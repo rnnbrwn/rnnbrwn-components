@@ -10,6 +10,9 @@
   @each $step, $size in $scale {
     --step-#{$step}: #{fluid(list.nth($size, 1), list.nth($size, 2))};
   }
+  --leading: #{s.$leading};
+  // The height of one line of body text: the beat of the vertical rhythm.
+  --line: calc(var(--step-0) * var(--leading));
 }
 
 @mixin space-tokens($scale: space-scale()) {

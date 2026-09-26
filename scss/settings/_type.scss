@@ -3,6 +3,7 @@
 $type-base: (1rem, 1.125rem) !default;   // 16px -> 18px
 $type-ratio: (1.2, 1.25) !default;
 $type-steps: (-2, 6) !default;           // --step--2 ... --step-6 (6: display size, e.g. a Hero heading)
+$leading: 1.5 !default;                  // body text line-height; one line of it is --line
 
 $fonts: (
   body: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),

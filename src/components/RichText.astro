@@ -25,7 +25,7 @@ const body = editorHtml(section.body, cmsUrl, Astro.site);
   .rich-text__inner {
     display: flex;
     flex-direction: column;
-    gap: var(--space-s);
+    gap: calc(var(--line) / 2); // the heading half a line from its text
   }
 
   .rich-text__heading {

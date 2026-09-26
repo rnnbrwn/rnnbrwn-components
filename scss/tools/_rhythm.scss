@@ -1,0 +1,11 @@
+// A line-height of about $leading, rounded up to the next quarter of --line (one line of body
+// text), so text of any size is a whole number of quarter lines tall. $leading is a number or a
+// custom property, e.g. snap-leading(1.1) or snap-leading(var(--leading)). Browsers without
+// round() keep $leading. (The 0.01px stops text that already fits exactly rounding up a step.)
+@mixin snap-leading($leading) {
+  line-height: $leading;
+
+  @supports (line-height: round(up, 1em, 1px)) {
+    line-height: round(up, calc(#{$leading} * 1em - 0.01px), var(--line) / 4);
+  }
+}

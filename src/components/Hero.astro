@@ -71,7 +71,7 @@ const sizes = sectionWidth(section) === 'full' ? '100vw' : laneSizes(section);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-s);
+    gap: calc(var(--line) / 2);
   }
 
   .hero--centre .hero__content {
@@ -94,7 +94,7 @@ const sizes = sectionWidth(section) === 'full' ? '100vw' : laneSizes(section);
   .hero__heading {
     max-inline-size: 22ch;
     font-size: var(--step-6);
-    line-height: 1.05;
+    @include snap-leading(1.05);
   }
 
   .hero__intro {
@@ -103,8 +103,9 @@ const sizes = sectionWidth(section) === 'full' ? '100vw' : laneSizes(section);
   }
 
   // ButtonRow's own element, so reached with :global().
+  // Half a line between the texts, a whole line above the buttons.
   .hero__content > :global(.hero__buttons) {
-    margin-block-start: var(--space-xs);
+    margin-block-start: calc(var(--line) / 2);
   }
 
   // Over a photo, the accent colour isn't readable enough either (3.5:1 at worst): text links
