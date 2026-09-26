@@ -132,5 +132,128 @@ await axe(p, 'phone, menu open, dark page');
 await p.screenshot({ path: SHOTS + '/fs-open-dark.png' });
 await p.close();
 
+// ---- Sub-links: a dropdown on wider screens (the test menu's "Parts": Buttons, Placeholder) ----
+const sub = (p) => p.evaluate(() => {
+  const item = [...document.querySelectorAll('.site-nav__item')].find((li) => li.querySelector('.site-nav__sub'));
+  const btn = item.querySelector('.site-nav__sub-toggle'), list = item.querySelector('.site-nav__sub'), r = list.getBoundingClientRect();
+  return { shown: getComputedStyle(list).visibility === 'visible', expanded: btn.getAttribute('aria-expanded'), btnShown: getComputedStyle(btn).display !== 'none',
+    focus: document.activeElement?.textContent.trim() || document.activeElement?.tagName, right: Math.round(r.right), left: Math.round(r.left),
+    parentLeft: Math.round(item.querySelector('a').getBoundingClientRect().left), subLinkLeft: Math.round(list.querySelector('a').getBoundingClientRect().left), mainTop: Math.round(document.querySelector('main').getBoundingClientRect().top) };
+});
+const subCenter = (p, selector) => p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, selector);
+p = await b.newPage();
+await p.setViewport({ width: 1280, height: 800 });
+await p.goto(PAGE, { waitUntil: 'networkidle0' });
+let d = await sub(p);
+const names = await p.evaluate(() => { const btn = document.querySelector('.site-nav__sub-toggle'); return { name: btn.textContent.trim(), controls: !!document.getElementById(btn.getAttribute('aria-controls'))?.matches('.site-nav__sub') }; });
+check('dropdown: closed at first, its button is labelled and controls it', !d.shown && d.expanded === 'false' && d.btnShown && names.name === 'Parts menu' && names.controls, `"${names.name}"`);
+const mainTop = d.mainTop;
+// Keyboard: the parent link, then its button; Enter opens; Tab goes through the sub-links; tabbing out closes.
+await p.focus('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+let kseq = await tabs(p, 1);
+d = await sub(p);
+check('dropdown: closed sub-links are skipped by Tab (parent link → its button)', d.focus === 'Parts menu' && !d.shown, kseq.join(' → '));
+await p.keyboard.press('Enter'); await wait(300);
+d = await sub(p);
+check('dropdown: Enter on the button opens it', d.expanded === 'true' && d.shown);
+check('dropdown: opening it doesn\'t move the page', d.mainTop === mainTop, `main top ${mainTop} → ${d.mainTop}`);
+check('dropdown: stays on screen', d.right <= 1280 && d.left >= 0, `${d.left}–${d.right}px`);
+kseq = await tabs(p, 3);
+d = await sub(p);
+check('dropdown: Tab goes through its links, then tabbing out closes it', kseq[0] === 'header:Buttons' && kseq[1] === 'header:Placeholder' && d.expanded === 'false' && !d.shown, kseq.join(' → '));
+// The accessibility scan moves focus (which closes a dropdown opened with its button), so it runs
+// with the dropdown held open by the pointer resting on it, and checks it was still open.
+await p.mouse.move(...(await subCenter(p, '.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a')));
+await p.mouse.move(...(await subCenter(p, '.site-nav__sub li:last-child a')), { steps: 8 }); await wait(300);
+await axe(p, 'desktop, dropdown open');
+check('dropdown: it was open for that scan', (await sub(p)).shown);
+// (Taking a screenshot loses the hover, so for the picture it's opened with its button.)
+await p.click('.site-nav__sub-toggle'); await wait(300);
+await p.screenshot({ path: SHOTS + '/dropdown-open.png', clip: { x: 0, y: 0, width: 1280, height: 260 } });
+await p.keyboard.press('Escape');
+await p.mouse.move(400, 600); await wait(700);
+await p.focus('.site-nav__sub-toggle'); await p.keyboard.press('Enter'); await p.keyboard.press('Tab'); await wait(300);
+await p.keyboard.press('Escape'); await wait(50);
+d = await sub(p);
+check('dropdown: Escape from a sub-link closes it, focus back on its button', d.expanded === 'false' && !d.shown && d.focus === 'Parts menu', `expanded ${d.expanded}, shown ${d.shown}, focus "${d.focus}"`);
+// Mouse: hovering opens it; a short grace after the pointer leaves; clicking elsewhere closes one opened by the button.
+const parentAt = await subCenter(p, '.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+await p.mouse.move(...parentAt); await wait(300);
+d = await sub(p);
+check('dropdown: hovering over the parent opens it (without changing aria-expanded)', d.shown && d.expanded === 'false');
+await p.mouse.move(...(await subCenter(p, '.site-nav__sub li:last-child a')), { steps: 8 }); await wait(100);
+check('dropdown: stays open while the pointer moves down into it', (await sub(p)).shown);
+await p.mouse.move(400, 600); await wait(100);
+const during = (await sub(p)).shown;
+await wait(700);
+check('dropdown: after the pointer leaves it stays briefly, then closes', during && !(await sub(p)).shown);
+await p.mouse.move(...parentAt); await wait(300);
+await p.keyboard.press('Escape'); await wait(50);
+const dismissed = !(await sub(p)).shown;
+await p.mouse.move(400, 600); await wait(100); await p.mouse.move(...parentAt); await wait(300);
+check('dropdown: Escape hides one shown by hovering; hovering again shows it', dismissed && (await sub(p)).shown);
+await p.click('.site-nav__sub-toggle'); await wait(300);
+const pinned = await sub(p);
+await p.mouse.move(400, 600); await wait(700);
+const pinnedAway = await sub(p);
+await p.click('.site-nav__sub-toggle'); await wait(50);
+d = await sub(p);
+check('dropdown: clicking its button keeps it open after the pointer leaves; clicking again closes it at once', pinned.expanded === 'true' && pinnedAway.shown && d.expanded === 'false' && !d.shown);
+await p.click('.site-nav__sub-toggle'); await wait(100);
+await p.mouse.click(400, 600); await wait(700);
+d = await sub(p);
+check('dropdown: clicking elsewhere closes it', d.expanded === 'false' && !d.shown);
+await p.setViewport({ width: 800, height: 800 }); await wait(700);
+await p.click('.site-nav__sub-toggle'); await wait(300);
+d = await sub(p);
+check('dropdown: stays on screen on a narrow desktop (800px)', d.shown && d.right <= 800 && d.left >= 0, `${d.left}–${d.right}px`);
+await p.close();
+
+// Current page inside a dropdown: the page's own link is aria-current; its parent is marked too.
+p = await b.newPage();
+await p.setViewport({ width: 1280, height: 800 });
+await p.goto(BASE + '/components/buttons/', { waitUntil: 'networkidle0' });
+const cur = await p.evaluate(() => ({
+  current: [...document.querySelectorAll('.site-nav [aria-current="page"]')].map((a) => a.textContent.trim()),
+  within: [...document.querySelectorAll('.site-nav [data-current-within] > .site-nav__parent > a')].map((a) => a.textContent.trim()),
+  weight: getComputedStyle(document.querySelector('.site-nav [data-current-within] > .site-nav__parent > a')).fontWeight,
+}));
+check('dropdown: on a sub-link\'s page, that link is current and its parent looks current', cur.current.join() === 'Buttons' && cur.within.join() === 'Parts' && cur.weight === '700', `current ${cur.current}, parent ${cur.within}`);
+await p.close();
+
+// Touch (a tablet: wide, no hover): the button opens and closes it; the parent link still goes to its page.
+p = await b.newPage();
+await p.setViewport({ width: 1024, height: 768, isMobile: true, hasTouch: true });
+await p.goto(PAGE, { waitUntil: 'networkidle0' });
+await p.tap('.site-nav__sub-toggle'); await wait(300);
+const tapOpen = (await sub(p)).shown;
+await p.tap('.site-nav__sub-toggle'); await wait(700);
+check('dropdown: on a touch screen, tapping the button opens and closes it', tapOpen && !(await sub(p)).shown);
+await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.tap('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a')]);
+check('dropdown: tapping the parent link goes to its page', new URL(p.url()).pathname === '/components/parts/', new URL(p.url()).pathname);
+await p.close();
+
+// No JavaScript, wide: no button; the dropdown opens on keyboard focus.
+p = await b.newPage();
+await p.setJavaScriptEnabled(false);
+await p.setViewport({ width: 1280, height: 800 });
+await p.goto(PAGE, { waitUntil: 'networkidle0' });
+d = await sub(p);
+await p.focus('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+kseq = await tabs(p, 1);
+const nojs = await sub(p);
+check('dropdown, no JavaScript: no button; Tab from the parent opens it on its first link', !d.btnShown && !d.shown && nojs.shown && kseq[0] === 'header:Buttons', kseq.join(' → '));
+await p.close();
+
+// Phone: listed under the parent, indented, no button.
+p = await b.newPage();
+await p.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true });
+await p.goto(PAGE, { waitUntil: 'networkidle0' });
+await p.tap('.site-nav__toggle'); await wait(400);
+d = await sub(p);
+check('phone: sub-links listed under their parent, indented, no dropdown button', d.shown && !d.btnShown && d.subLinkLeft > d.parentLeft, `sub-links start ${d.subLinkLeft - d.parentLeft}px further in`);
+await p.screenshot({ path: SHOTS + '/fs-open-sub.png' });
+await p.close();
+
 console.log(results.join('\n'));
 await b.close();

@@ -48,7 +48,7 @@ export const NAVIGATION_QUERY = `
     }
   }
   navigationMenu: menuItems(where: { location: MAIN_NAVIGATION, parentDatabaseId: 0 }, first: 50) {
-    nodes { label url target }
+    nodes { label url target childItems(first: 50) { nodes { label url target } } }
   }
 `;
 
@@ -66,5 +66,11 @@ export interface NavigationData {
       width: string[] | null;
     } | null;
   } | null;
-  navigationMenu: { nodes: { label: string | null; url: string | null; target: string | null }[] } | null;
+  navigationMenu: { nodes: (NavigationMenuItem & { childItems: { nodes: NavigationMenuItem[] } | null })[] } | null;
+}
+
+interface NavigationMenuItem {
+  label: string | null;
+  url: string | null;
+  target: string | null;
 }

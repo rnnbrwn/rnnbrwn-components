@@ -50,4 +50,5 @@
   @each $name, $value in s.$easings {
     --ease-#{$name}: #{$value};
   }
+  --hover-grace: #{s.$hover-grace};
 }

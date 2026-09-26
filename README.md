@@ -10,6 +10,8 @@ Shared layout system (Sass) and Astro components for every RNNBRWN site. Each co
 In GraphQL each one is `PageSectionsSections<Name>Layout` on `page.pageSections.sections`.
 
 ## Components
+Components come in two kinds. **Sections** are what an editor adds to a page in WordPress (Hero, Rich Text). **Parts** are shared pieces that sections are built from, so they look and behave the same everywhere: Buttons (also a section of its own), editor text (`rs_editor()` + `.prose`), and the shared section settings (width, background, spacing, anchor; tested on the Placeholder page). The test site lists them separately: sections at the top of its menu, parts under **Parts**.
+
 | Component | ACF layout | What it's for |
 |---|---|---|
 | Hero | `hero` | A page's opening section: eyebrow, heading (the page's `<h1>` when it's the first section), intro and up to three buttons. **Centred** (text only) or **Background image** (photo tinted with the section's colour, left or centred text, a "keep in view" crop point, decorative unless the editor asks for it to be described); **Standard** or **Tall** |
@@ -24,7 +26,7 @@ Not page sections: they appear on every page and are edited on their own page in
 |---|---|---|---|
 | Navigation | `'navigation' => true` | wp-admin → Navigation | The site header: logo (plus an optional one for dark backgrounds) or the site title, and the main links. Below the `md` breakpoint they're behind a menu button that opens them full screen: the page behind is hidden, `inert` and doesn't scroll |
 
-Navigation's links come from either a **WordPress menu** (Appearance → Menus, "Main navigation" location; top-level items only for now) or, for one-page sites, **sections picked by their Anchor ID**. In Astro, add `NAVIGATION_QUERY` to the page's query and put it first in `<body>`; the page's `<main>` needs `id="main"` for its "Skip to content" link:
+Navigation's links come from either a **WordPress menu** (Appearance → Menus, "Main navigation" location) or, for one-page sites, **sections picked by their Anchor ID**. Menu items dragged under another become its **sub-links** (one level; deeper ones aren't shown). On wider screens they're a dropdown: the parent stays a link to its own page, and the ▾ button beside it opens the dropdown (click, Enter or Space); hovering opens it too, and it stays a moment (`--hover-grace`) after the pointer leaves. Escape, clicking elsewhere or tabbing out closes it. On small screens the sub-links are listed under their parent, indented. In Astro, add `NAVIGATION_QUERY` to the page's query and put it first in `<body>`; the page's `<main>` needs `id="main"` for its "Skip to content" link:
 
 ```astro
 <Navigation data={data} cmsUrl={import.meta.env.GRAPHQL_URL} />

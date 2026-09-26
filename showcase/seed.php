@@ -1,8 +1,8 @@
 <?php
 // Creates (or refreshes) the component test pages shown at rnnbrwn.xyz/components/:
-// a "Components" overview page and one child page per component (/components/hero/ ...),
-// each on the Sections template holding test versions of that component, plus the test
-// Navigation menu linking them. Safe to re-run: it updates the pages instead of duplicating them.
+// a "Components" overview page, one child page per component (/components/hero/ ...) on the
+// Sections template holding test versions of that component, a "Parts" page listing the parts
+// (see $part_names), and the test Navigation menu linking them. Safe to re-run: it updates the pages instead of duplicating them.
 // When a component is added to the library, give it a page below and add its test rows.
 //
 // Run from platform/rnnbrwn-cms:
@@ -28,6 +28,11 @@ $component_pages = [
 	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 3 ),
 	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 4 ),
 ];
+// Sections are what an editor adds to a page; parts are shared pieces that sections are built
+// from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
+// parts sit under "Parts", a page of its own (/components/parts/) that lists them.
+$part_names = [ 'buttons', 'placeholder' ];
+$parts_id   = $test_page( 'parts', 'Parts', $id, 5 );
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -93,11 +98,12 @@ if ( $menu ) {
 	wp_delete_nav_menu( $menu->term_id );
 }
 $menu_id = wp_create_nav_menu( 'Main navigation (test)' );
-$add_page = fn( $page_id ) => wp_update_nav_menu_item( $menu_id, 0, [
+$add_page = fn( $page_id, $parent_item = 0 ) => wp_update_nav_menu_item( $menu_id, 0, [
 	'menu-item-object'    => 'page',
 	'menu-item-object-id' => $page_id,
 	'menu-item-type'      => 'post_type',
 	'menu-item-status'    => 'publish',
+	'menu-item-parent-id' => $parent_item,
 ] );
 $add_link = fn( $title, $url, $target = '' ) => wp_update_nav_menu_item( $menu_id, 0, [
 	'menu-item-title'  => $title,
@@ -106,11 +112,18 @@ $add_link = fn( $title, $url, $target = '' ) => wp_update_nav_menu_item( $menu_i
 	'menu-item-type'   => 'custom',
 	'menu-item-status' => 'publish',
 ] );
-// The overview, the Example Site, then one link per component page.
+// The overview, the Example Site, one link per section's page, then Parts with the parts'
+// pages as its sub-links (a dropdown on wider screens).
 $add_page( $id );
 $add_page( $example_id );
-foreach ( $component_pages as $page_id ) {
-	$add_page( $page_id );
+foreach ( $component_pages as $name => $page_id ) {
+	if ( ! in_array( $name, $part_names, true ) ) {
+		$add_page( $page_id );
+	}
+}
+$parts_item = $add_page( $parts_id );
+foreach ( $part_names as $name ) {
+	$add_page( $component_pages[ $name ], $parts_item );
 }
 set_theme_mod( 'nav_menu_locations', array_merge( (array) get_theme_mod( 'nav_menu_locations' ), [ 'main_navigation' => $menu_id ] ) );
 
@@ -293,8 +306,9 @@ $sections = [
 
 // ---------- Fill the pages ----------
 
-// The overview has no sections of its own: the site lists the component pages there.
+// The overview and Parts have no sections of their own: the site lists the pages there.
 update_field( 'field_rs_sections', [], $id );
+update_field( 'field_rs_sections', [], $parts_id );
 $rows = [
 	'hero'        => $sections_hero,
 	'rich_text'   => $sections_rich_text,

@@ -4,7 +4,9 @@
 // button that opens them full screen, hiding the page.
 // WordPress half: rnnbrwn-base/sections/site/navigation.php (wp-admin → Navigation). The links
 // come from a WordPress menu (Appearance → Menus, "Main navigation" location) or, for one-page
-// sites, from sections picked by their Anchor ID.
+// sites, from sections picked by their Anchor ID. Menu items dragged under another become its
+// sub-links (one level): a dropdown on wider screens, opened with the ▾ button beside the parent
+// link or by hovering; listed under the parent, indented, in the small-screen menu.
 //
 // Put it first in <body>, and give the page's <main> the id in `mainId` so the
 // "Skip to content" link has somewhere to go:
@@ -16,7 +18,10 @@
 // screen readers; while the full-screen menu is open the page behind is `inert` (out of reach
 // of keyboards and screen readers) and can't scroll; Escape, the button or following a link
 // closes it; the current page is marked (aria-current); new-tab links say so; motion follows
-// prefers-reduced-motion; without JavaScript the links are simply shown.
+// prefers-reduced-motion; without JavaScript the links are simply shown. Dropdowns follow the
+// "disclosure" pattern: a real button with aria-expanded (never hover-only), closed ones out of
+// the tab order, Escape closes (also one shown by hovering, as WCAG 1.4.13 asks), and so do
+// clicking elsewhere and tabbing out; without JavaScript they open on hover and keyboard focus.
 import { siteLink } from './html';
 import { choice } from './settings';
 import type { NavigationData } from './graphql';
@@ -41,24 +46,40 @@ const menuId = 'site-navigation-menu';
 const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
 const here = trimSlash(Astro.url.pathname);
 
-// The links: from the WordPress menu in the "Main navigation" location, or (for one-page
-// sites) from the sections picked in wp-admin → Navigation.
-const source =
-  nav?.source === 'sections'
-    ? (nav.navigationSections ?? []).map((item) => ({ url: choice(item.target, ''), title: item.label, target: null }))
-    : (data.navigationMenu?.nodes ?? []).map((item) => ({ url: item.url, title: item.label, target: item.target }));
+type SourceLink = { url: string | null; label: string | null; target: string | null };
+type Link = { href: string; title: string; newTab: boolean; current: boolean };
 
-const links = source
-  .filter((link) => !!link.url)
-  .map((link) => {
-    let href = siteLink(link.url, cmsUrl, Astro.site);
-    // "#contact" typed into a menu means that section of the home page, from any page.
-    if (href.startsWith('#')) href = `/${href}`;
-    const newTab = link.target === '_blank';
-    // Current page: a site link to this path (not an anchor within it).
-    const current = href.startsWith('/') && !href.includes('#') && trimSlash(href.split('?')[0]) === here;
-    return { href, title: link.title || href, newTab, current };
-  });
+const toLink = (link: SourceLink): Link | null => {
+  if (!link.url) return null;
+  let href = siteLink(link.url, cmsUrl, Astro.site);
+  // "#contact" typed into a menu means that section of the home page, from any page.
+  if (href.startsWith('#')) href = `/${href}`;
+  // Current page: a site link to this path (not an anchor within it).
+  const current = href.startsWith('/') && !href.includes('#') && trimSlash(href.split('?')[0]) === here;
+  return { href, title: link.label || href, newTab: link.target === '_blank', current };
+};
+
+// The links: from the WordPress menu in the "Main navigation" location, with one level of
+// sub-links (items dragged under another in Appearance → Menus; deeper ones aren't shown), or
+// (for one-page sites) from the sections picked in wp-admin → Navigation.
+const links: (SourceLink & { children: SourceLink[] })[] =
+  nav?.source === 'sections'
+    ? (nav.navigationSections ?? []).map((item) => ({ url: choice(item.target, ''), label: item.label, target: null, children: [] }))
+    : (data.navigationMenu?.nodes ?? []).map((item) => ({ ...item, children: item.childItems?.nodes ?? [] }));
+
+const items = links.flatMap((item, index) => {
+  const link = toLink(item);
+  if (!link) return [];
+  const children = item.children.map(toLink).filter((child): child is Link => !!child);
+  // A parent whose sub-links include this page is marked too (visually; aria-current stays on the page's own link).
+  return [{ ...link, children, subId: `${menuId}-${index}`, currentWithin: children.some((child) => child.current) }];
+});
+const linkAttrs = (link: Link) => ({
+  href: link.href,
+  'aria-current': link.current ? ('page' as const) : undefined,
+  target: link.newTab ? ('_blank' as const) : undefined,
+  rel: link.newTab ? 'noopener' : undefined,
+});
 ---
 
 <header class:list={['site-nav', surface !== 'page' && `surface-${surface}`]} data-site-nav>
@@ -94,7 +115,7 @@ const links = source
         )}
       </a>
 
-      {links.length > 0 && (
+      {items.length > 0 && (
         <>
           <button type="button" class="site-nav__toggle" aria-expanded="false" aria-controls={menuId}>
             <span class="site-nav__icon" aria-hidden="true"><span /><span /><span /></span>
@@ -103,17 +124,25 @@ const links = source
 
           <nav id={menuId} class="site-nav__menu" aria-label={label}>
             <ul class="site-nav__links">
-              {links.map((link) => (
-                <li>
-                  <a
-                    href={link.href}
-                    aria-current={link.current ? 'page' : undefined}
-                    target={link.newTab ? '_blank' : undefined}
-                    rel={link.newTab ? 'noopener' : undefined}
-                  >
-                    {link.title}
-                    {link.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
-                  </a>
+              {items.map((item) => (
+                <li class="site-nav__item" data-current-within={item.currentWithin || undefined}>
+                  {item.children.length === 0 ? (
+                    <a {...linkAttrs(item)}>{item.title}{item.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a>
+                  ) : (
+                    <>
+                      {/* The parent is a link of its own; the button beside it opens its sub-links. */}
+                      <span class="site-nav__parent">
+                        <a {...linkAttrs(item)}>{item.title}{item.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a>
+                        <button type="button" class="site-nav__sub-toggle" aria-expanded="false" aria-controls={item.subId}>
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" /></svg>
+                          <span class="visually-hidden">{item.title} menu</span>
+                        </button>
+                      </span>
+                      <ul class="site-nav__sub" id={item.subId}>
+                        {item.children.map((child) => <li><a {...linkAttrs(child)}>{child.title}{child.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}</a></li>)}
+                      </ul>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -169,21 +198,95 @@ const links = source
 
     button.addEventListener('click', () => setOpen(!isOpen()));
 
-    // Escape closes the menu and puts focus back on the button.
-    header.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && isOpen()) {
-        event.preventDefault();
+    // ---- Sub-links (wider screens): a dropdown under the parent ----
+    // It opens with its button (click, Enter or Space) or by hovering over the parent; one at a
+    // time. Escape, clicking elsewhere or moving focus out of it closes it. On small screens the
+    // sub-links are simply listed under their parent and these buttons are hidden.
+    const subButtons = [...header.querySelectorAll<HTMLButtonElement>('.site-nav__sub-toggle')];
+    const itemOf = (subButton: HTMLButtonElement) => subButton.closest<HTMLElement>('.site-nav__item')!;
+    const openSub = () => subButtons.find((subButton) => subButton.getAttribute('aria-expanded') === 'true');
+    // Closing hides it straight away, even under the pointer (data-dismissed, until the pointer
+    // leaves or comes back); only a dropdown shown by hovering fades after the pointer leaves.
+    const setSub = (subButton: HTMLButtonElement, open: boolean) => {
+      subButton.setAttribute('aria-expanded', String(open));
+      itemOf(subButton).toggleAttribute('data-dismissed', !open);
+    };
+    const closeSubs = (except?: HTMLButtonElement) =>
+      subButtons.forEach((subButton) => subButton !== except && setSub(subButton, false));
+
+    // A dropdown that would run off the right of the screen lines up with its parent's right edge instead.
+    const alignSubs = () =>
+      subButtons.forEach((subButton) => {
+        const item = itemOf(subButton);
+        item.removeAttribute('data-align');
+        if (!wide.matches) return;
+        const sub = item.querySelector<HTMLElement>('.site-nav__sub')!;
+        if (sub.getBoundingClientRect().right > document.documentElement.clientWidth) item.setAttribute('data-align', 'end');
+      });
+    alignSubs();
+    window.addEventListener('resize', alignSubs);
+
+    subButtons.forEach((subButton) => {
+      const item = itemOf(subButton);
+      subButton.addEventListener('click', () => {
+        // A click always opens a closed one, even if hovering already shows it (so it stays open when
+        // the pointer leaves); clicking again closes it at once.
+        const open = subButton.getAttribute('aria-expanded') !== 'true';
+        closeSubs(subButton);
+        setSub(subButton, open);
+      });
+      // Hovering one parent closes any other dropdown that was opened with its button.
+      item.addEventListener('pointerenter', (event) => {
+        item.removeAttribute('data-dismissed');
+        if (event.pointerType === 'mouse') closeSubs(subButton);
+      });
+      item.addEventListener('pointerleave', () => item.removeAttribute('data-dismissed'));
+      // Tabbing out of it closes it.
+      item.addEventListener('focusout', (event) => {
+        if (!item.contains(event.relatedTarget as Node | null)) setSub(subButton, false);
+      });
+    });
+
+    // Clicking anywhere outside an open dropdown closes it.
+    document.addEventListener('click', (event) => {
+      const open = openSub();
+      if (open && !itemOf(open).contains(event.target as Node)) setSub(open, false);
+    });
+
+    // Escape closes an open dropdown (focus goes back to its button), hides one shown by hovering,
+    // or closes the full-screen menu and puts focus back on the menu button.
+    // (Listened for on the whole page: someone hovering may have focus anywhere.)
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = openSub();
+      const hovered = header.querySelectorAll('.site-nav__item:hover');
+      if (open) {
+        setSub(open, false);
+        open.focus();
+      } else if (wide.matches && hovered.length) {
+        hovered.forEach((item) => item.setAttribute('data-dismissed', ''));
+      } else if (isOpen()) {
         setOpen(false, { returnFocus: true });
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    // Following a link (e.g. to a section further down this page) closes the menu and any dropdown.
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) {
+        setOpen(false);
+        closeSubs();
       }
     });
 
-    // Following a link (e.g. to a section further down this page) closes it.
-    menu.addEventListener('click', (event) => {
-      if ((event.target as HTMLElement).closest('a')) setOpen(false);
-    });
-
     // On wider screens the links are always shown, so there's no open menu to keep.
-    wide.addEventListener('change', () => setOpen(false));
+    wide.addEventListener('change', () => {
+      setOpen(false);
+      closeSubs();
+      alignSubs();
+    });
   });
 </script>
 
@@ -298,7 +401,7 @@ const links = source
     list-style: none;
     padding: 0;
 
-    li + li { border-block-start: 1px solid var(--color-border); }
+    > li + li { border-block-start: 1px solid var(--color-border); }
 
     a {
       display: flex;
@@ -318,6 +421,57 @@ const links = source
         text-decoration-color: var(--color-accent);
       }
     }
+
+    // A parent whose sub-links include this page looks current too.
+    [data-current-within] > .site-nav__parent > a {
+      font-weight: 700;
+      text-decoration-line: underline;
+      text-decoration-thickness: 2px;
+      text-decoration-color: var(--color-accent);
+    }
+  }
+
+  // ---------- Sub-links ----------
+  // Small screens (and no JavaScript): listed under their parent, indented. Wider screens: a
+  // dropdown (below).
+
+  .site-nav__parent {
+    display: flex;
+    align-items: center;
+  }
+
+  .site-nav__sub {
+    list-style: none;
+    padding: 0 0 var(--space-2xs) var(--space-m);
+
+    a { font-size: var(--step-0); }
+  }
+
+  // The ▾ button beside a parent: only on wider screens with JavaScript.
+  .site-nav__sub-toggle {
+    display: none;
+    place-items: center;
+    min-inline-size: var(--space-l);
+    min-block-size: var(--tap-target);
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    svg {
+      inline-size: var(--space-s);
+      block-size: var(--space-s);
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: rotate var(--duration-fast) var(--ease-out);
+    }
+
+    &[aria-expanded='true'] svg { rotate: 180deg; }
   }
 
   // ---------- Small screens: the menu opens full screen ----------
@@ -347,13 +501,19 @@ const links = source
         translate: 0 var(--space-s);
         transition: translate var(--duration-base) var(--ease-out);
 
-        li { border-block-end: 1px solid var(--color-border); }
-        li + li { border-block-start: none; }
+        > li { border-block-end: 1px solid var(--color-border); }
+        > li + li { border-block-start: none; }
 
         a {
           padding-block: var(--space-xs);
           font-size: var(--step-3);
           font-family: var(--font-heading);
+        }
+
+        .site-nav__sub a {
+          padding-block: var(--space-2xs);
+          font-size: var(--step-1);
+          font-family: inherit;
         }
       }
     }
@@ -389,9 +549,75 @@ const links = source
       flex-wrap: wrap;
       column-gap: var(--space-m);
 
-      li + li { border: none; }
+      > li + li { border: none; }
 
       a { font-size: var(--step-0); }
     }
+
+    .site-nav[data-enhanced] .site-nav__sub-toggle { display: inline-grid; }
+
+    // The dropdown: a small panel under its parent, lined up with the parent's left edge (or its
+    // right edge, data-align="end", when it would run off the screen).
+    .site-nav__item { position: relative; }
+
+    .site-nav__sub {
+      position: absolute;
+      inset-block-start: 100%;
+      inset-inline-start: calc(var(--space-s) * -1);
+      z-index: 1;
+      min-inline-size: calc(var(--space-3xl) * 2);
+      padding: var(--space-2xs);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-m);
+      background-color: var(--color-bg);
+      box-shadow: var(--shadow-raised);
+
+      // Closed: invisible, and (via visibility) out of the tab order and hidden from screen
+      // readers. After hovering it stays a moment (--hover-grace) so a stray pointer doesn't shut it.
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 calc(var(--space-3xs) * -1);
+      transition:
+        opacity var(--duration-fast) var(--ease-out) var(--hover-grace),
+        translate var(--duration-fast) var(--ease-out) var(--hover-grace),
+        visibility 0s linear calc(var(--hover-grace) + var(--duration-fast));
+
+      [data-align='end'] > & {
+        inset-inline-start: auto;
+        inset-inline-end: 0;
+      }
+
+      a {
+        padding-inline: var(--space-xs);
+        border-radius: var(--radius-s);
+        white-space: nowrap;
+
+        &:hover { background-color: var(--color-card); }
+      }
+    }
+
+    // Open: with its button, or while hovered (unless Escape dismissed it), or, without
+    // JavaScript, while something in it has keyboard focus.
+    .site-nav__parent:has([aria-expanded='true']) + .site-nav__sub,
+    .site-nav:not([data-enhanced]) .site-nav__item:focus-within > .site-nav__sub {
+      visibility: visible;
+      opacity: 1;
+      translate: none;
+      transition-delay: 0s;
+    }
+
+    @media (hover: hover) {
+      .site-nav__item:hover:not([data-dismissed]) > .site-nav__sub {
+        visibility: visible;
+        opacity: 1;
+        translate: none;
+        transition-delay: 0s;
+      }
+
+      .site-nav__item:hover:not([data-dismissed]) .site-nav__sub-toggle svg { rotate: 180deg; }
+    }
+
+    // Escape hides it straight away.
+    [data-dismissed] > .site-nav__sub { transition: none; }
   }
 </style>

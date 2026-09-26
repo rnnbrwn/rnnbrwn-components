@@ -5,6 +5,10 @@ $durations: (
   base: 250ms,  // things appearing: a menu opening
 ) !default;
 
+// How long something opened by hovering (a dropdown) stays open after the pointer leaves, so it
+// doesn't snap shut when the pointer strays on its way to it. Not motion, so reduced motion keeps it.
+$hover-grace: 300ms !default;
+
 $easings: (
   out: cubic-bezier(0.2, 0, 0, 1),  // quick start, gentle stop
 ) !default;
