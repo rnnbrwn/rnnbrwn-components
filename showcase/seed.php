@@ -25,14 +25,15 @@ $id              = $test_page( 'components', 'Components' );
 $component_pages = [
 	'hero'        => $test_page( 'hero', 'Hero', $id, 1 ),
 	'rich_text'   => $test_page( 'rich-text', 'Rich Text', $id, 2 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 3 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 4 ),
+	'card_grid'   => $test_page( 'card-grid', 'Card Grid', $id, 3 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 4 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 5 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
 // parts sit under "Parts", a page of its own (/components/parts/) that lists them.
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 5 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 6 );
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -285,6 +286,80 @@ $sections_rich_text = [
 	$rich_text( '', '<p>Rich Text with no heading: just the text. ' . str_repeat( 'Body text continues to show how a longer paragraph wraps within the reading length. ', 3 ) . '</p>' ),
 ];
 
+// ---------- Card Grid ----------
+
+// Three card images in different shapes (wide, tall, square), so the fixed 3:2 crop is tested.
+// Made once, then reused.
+$card_images = array_filter( (array) get_option( 'rs_test_card_images', [] ), fn( $image ) => get_post( $image ) );
+if ( count( $card_images ) < 3 ) {
+	$card_images = [];
+	foreach ( [ [ 1200, 600, [ 59, 91, 219 ], 'wide' ], [ 600, 900, [ 229, 0, 83 ], 'tall' ], [ 800, 800, [ 254, 206, 0 ], 'square' ] ] as [ $w, $h, $rgb, $shape ] ) {
+		$img = imagecreatetruecolor( $w, $h );
+		imagefilledrectangle( $img, 0, 0, $w, $h, imagecolorallocate( $img, ...$rgb ) );
+		imagefilledellipse( $img, (int) ( $w / 2 ), (int) ( $h / 2 ), (int) ( min( $w, $h ) * 0.6 ), (int) ( min( $w, $h ) * 0.6 ), imagecolorallocate( $img, 255, 255, 255 ) );
+		$file = wp_tempnam( "test-card-{$shape}.jpg" );
+		imagejpeg( $img, $file, 85 );
+		$image = media_handle_sideload( [ 'name' => "test-card-{$shape}.jpg", 'tmp_name' => $file ], 0, "Test card image ({$shape})" );
+		update_post_meta( $image, '_wp_attachment_image_alt', "A white circle on a coloured background ({$shape} original)" );
+		$card_images[] = $image;
+	}
+	update_option( 'rs_test_card_images', $card_images );
+}
+$card_images = array_values( $card_images );
+
+$card  = fn( $heading, $extra = [] ) => array_merge( [
+	'image'   => '',
+	'eyebrow' => '',
+	'heading' => $heading,
+	'text'    => 'A sentence or two about this card, long enough to wrap onto a few lines.',
+	'link'    => '',
+], $extra );
+$link  = fn( $title, $url = '/contact/', $target = '' ) => [ 'title' => $title, 'url' => str_starts_with( $url, '/' ) ? home_url( $url ) : $url, 'target' => $target ];
+$cards = [
+	$card( 'Linked, with link text', [ 'image' => $card_images[0], 'eyebrow' => 'Eyebrow', 'link' => $link( 'Read more' ) ] ),
+	$card( 'Linked, arrow only', [ 'image' => $card_images[1], 'eyebrow' => 'Tall image', 'link' => $link( '', '/components/hero/' ) ] ),
+	$card( 'Another website, new tab', [ 'image' => $card_images[2], 'eyebrow' => 'Square image', 'link' => $link( 'Visit example.com', 'https://example.com', '_blank' ) ] ),
+	$card( 'No link', [ 'image' => $card_images[0], 'eyebrow' => 'Display only', 'text' => 'Not clickable: no hover, no arrow.' ] ),
+	$card( 'No image, with a much longer heading that wraps', [ 'eyebrow' => 'Eyebrow', 'link' => $link( 'Read more' ) ] ),
+	$card( 'No eyebrow', [ 'image' => $card_images[1], 'text' => 'Shorter text.', 'link' => $link( 'Read more', '#card-grid' ) ] ),
+];
+$text_cards = [
+	$card( 'Text only', [ 'eyebrow' => 'One', 'link' => $link( 'Read more' ) ] ),
+	$card( 'Text only, no eyebrow', [ 'link' => $link( 'Read more' ) ] ),
+	$card( 'Text only, no link', [ 'eyebrow' => 'Three' ] ),
+	$card( 'A fourth card, alone on its row', [ 'eyebrow' => 'Four', 'text' => 'The last row isn\'t stretched: the card keeps its column\'s width.', 'link' => $link( 'Read more' ) ] ),
+];
+$card_grid = fn( $heading, $settings = [] ) => array_merge( [
+	'acf_fc_layout'     => 'card_grid',
+	'eyebrow'           => 'Section eyebrow',
+	'heading'           => $heading,
+	'intro'             => 'An optional intro under the heading, saying what the cards are.',
+	'card_grid_cards'   => $cards,
+	'card_grid_buttons' => [ $button( 'See everything', 'outline' ) ],
+	'columns'           => '3',
+	'last_card'         => 'column',
+	'card_style'        => 'panel',
+	'width'             => 'content',
+	'spacing'           => 'm',
+	'background'        => 'page',
+	'anchor'            => '',
+], $settings );
+
+$sections_card_grid = [
+	$card_grid( 'Card Grid: 3 columns, Panel', [ 'anchor' => 'card-grid' ] ),
+	$card_grid( 'Card Grid: 3 columns, Plain, no section eyebrow', [ 'card_style' => 'plain', 'eyebrow' => '' ] ),
+	$card_grid( 'Card Grid: 2 columns, narrow, on Subtle', [ 'columns' => '2', 'width' => 'narrow', 'background' => 'subtle', 'card_grid_cards' => array_slice( $cards, 0, 4 ) ] ),
+	$card_grid( 'Card Grid: 4 columns, wide, on Accent', [ 'columns' => '4', 'width' => 'wide', 'background' => 'accent' ] ),
+	$card_grid( 'Card Grid: 4 columns, Plain, full width, on Dark', [ 'columns' => '4', 'width' => 'full', 'background' => 'dark', 'card_style' => 'plain', 'card_grid_buttons' => [ $button( 'Main button', 'solid' ), $button( 'Text link', 'text' ) ] ] ),
+	$card_grid( 'Card Grid: 4 columns, Panel, on Dark, content width', [ 'columns' => '4', 'background' => 'dark', 'card_grid_buttons' => [] ] ),
+	$card_grid( '', [ 'eyebrow' => '', 'intro' => '', 'card_grid_cards' => $text_cards, 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: last card fills the row, 4 cards in 3 columns', [ 'intro' => 'With Last card set to Fill the row, the fourth card spans the whole second row.', 'last_card' => 'fill', 'card_grid_cards' => array_merge( array_slice( $text_cards, 0, 3 ), [ array_merge( $text_cards[3], [ 'text' => 'Alone on its row, so it stretches across all three columns.' ] ) ] ), 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: last card fills the row, 5 cards in 3 columns, Plain', [ 'intro' => 'The fifth card spans the two columns left; its image stays the height of the others.', 'last_card' => 'fill', 'card_style' => 'plain', 'card_grid_cards' => array_slice( $cards, 0, 5 ), 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: last card fills the row, 6 cards in 4 columns, wide, on Subtle', [ 'intro' => '', 'last_card' => 'fill', 'columns' => '4', 'width' => 'wide', 'background' => 'subtle', 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: last card fills the row, but the row is already full', [ 'intro' => 'Three cards in three columns: nothing to fill, so nothing stretches.', 'last_card' => 'fill', 'card_grid_cards' => array_slice( $cards, 0, 3 ), 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: one card', [ 'intro' => '', 'card_grid_cards' => [ $cards[0] ], 'card_grid_buttons' => [] ] ),
+];
+
 $sections = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
@@ -312,6 +387,7 @@ update_field( 'field_rs_sections', [], $parts_id );
 $rows = [
 	'hero'        => $sections_hero,
 	'rich_text'   => $sections_rich_text,
+	'card_grid'   => $sections_card_grid,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections,
 ];

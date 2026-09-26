@@ -4,7 +4,7 @@
 // link gets →, a link to another website or one that opens in a new tab gets ↗ (on any style).
 // Renders nothing if the link is empty. Links to the CMS's own pages become site links.
 // Usually rendered by ButtonRow.astro from a component's buttons field (rs_buttons in WordPress).
-import { siteLink } from './html';
+import { linkTarget } from './html';
 
 export type ButtonStyle = 'solid' | 'outline' | 'text';
 
@@ -15,10 +15,7 @@ interface Props {
 }
 
 const { link, style = 'solid', cmsUrl } = Astro.props;
-const href = siteLink(link?.url, cmsUrl, Astro.site);
-const newTab = link?.target === '_blank';
-// Another website: a full address that isn't the CMS (whose uploaded files count as the site's own).
-const external = /^https?:\/\//.test(href) && (!cmsUrl || new URL(href).origin !== new URL(cmsUrl).origin);
+const { href, newTab, external } = linkTarget(link, cmsUrl, Astro.site);
 const icon = newTab || external ? 'out' : style === 'text' ? 'next' : null;
 ---
 

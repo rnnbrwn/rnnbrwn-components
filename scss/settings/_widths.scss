@@ -8,3 +8,8 @@ $widths: (
 
 // Longest comfortable line of running text.
 $measure: 65ch !default;
+
+// The narrowest a card may get in a grid (Card Grid) before the grid drops a column: small
+// enough for four cards across the content lane. A Sass setting, not a custom property: the
+// widths where each number of columns fits are worked out from it when the CSS is built.
+$card-min: 12rem !default;

@@ -16,6 +16,7 @@ Components come in two kinds. **Sections** are what an editor adds to a page in 
 |---|---|---|
 | Hero | `hero` | A page's opening section: eyebrow, heading (the page's `<h1>` when it's the first section), intro and up to three buttons. **Centred** (text only) or **Background image** (photo tinted with the section's colour, left or centred text, a "keep in view" crop point, decorative unless the editor asks for it to be described); **Standard** or **Tall** |
 | Rich Text | `rich_text` | An optional heading and editor text: paragraphs, subheadings, lists, quotes, links |
+| Card Grid | `card_grid` | An optional eyebrow, heading and intro, a grid of cards, then up to three buttons. Each card: an optional image (cropped to 3:2), eyebrow, heading, short text and one optional link, which makes the **whole card clickable** (the heading is the link; the link text, e.g. "Read more →", is only a visual cue). **Columns** 2, 3 or 4 (the most side by side; fewer when a card would get narrower than `--card-min`, one on phones). **Last card** Column width (every card the same) or Fill the row (when the last row isn't full, the last card stretches across the columns left; its image keeps the others' height, so it's cropped to a wider strip). The column counts at each width are worked out from `$card-min` when the CSS is built, which is what lets plain CSS know how far to stretch. **Card look** Panel (a filled, rounded card) or Plain; a Panel's fill is only painted, reaching out around the card, so both looks are the same size and line up with the heading |
 | Buttons | `buttons` | A row of up to three buttons on its own (e.g. after some text), left or centred. The same buttons appear inside other components: see **Buttons** below |
 | Placeholder | `placeholder` | Testing only: a box showing its own settings. Never switch it on for a real site |
 
@@ -44,6 +45,8 @@ To give a component buttons:
 `<Sections>` tells the first section it's the page's main heading (`main`); pass `mainHeading={false}` on a page that already has an `<h1>`.
 
 Photos behind text are tinted with the section's colour at `--tint-strength` (80%, Accent 90%), chosen so text passes 4.5:1 even over pure white or black. With a mid-tone accent (e.g. white on pink at 4.6:1), Accent over a photo can still fall just short: prefer Light, Subtle or Dark over photos for such brands.
+
+Anything else rendered from a WordPress link field uses `linkTarget(link, cmsUrl, Astro.site)` from `src/html.ts` (the site address, new tab, other website), as Button and Card Grid do, so links behave the same everywhere.
 
 Editor text in any component uses `rs_editor()` in WordPress (a trimmed toolbar: subheadings, bold, italic, lists, quote, link; pasted text arrives as plain text) and `<div class="prose" set:html={editorHtml(html, cmsUrl)} />` in Astro, which styles it and turns links to the CMS's own pages into site links.
 
@@ -103,7 +106,7 @@ Muted text is the text colour blended 70% into the background, except on **Accen
 **Components never use `--brand-*`.** They use the colour **roles**, which every surface redefines for everything inside it, so a component works on any surface without knowing which one it's on: `--color-bg`, `--color-text`, `--color-muted`, `--color-border`, `--color-card` (cards, inputs), `--color-accent` and `--color-on-accent` (buttons). Muted, border and card are mixed from text and background automatically. Each site has to pick brand colours with enough contrast: check them with the test page's preview switches.
 
 ## Sass structure (`scss/`)
-- `settings/` values only: breakpoints, container sizes, width lanes, type and spacing scales, default brand colours. All `!default`.
+- `settings/` values only: breakpoints, container sizes, width lanes (plus `$card-min`, the narrowest a grid card may get), type and spacing scales, default brand colours. All `!default`.
 - `tools/` mixins and functions: `mq()` (and `mq-below()` for small-screen-only rules), `cq()`, `fluid()`, `type-scale()`, `space-scale()`, token mixins. Outputs no CSS; components use `@use 'tools' as *;`.
 - `base/`, `layout/` global CSS: surfaces and panels, reset and typography, the `.l-page` grid, section spacing, `.l-stack`, `.l-cluster`.
 - `rnnbrwn-global.scss` outputs all global CSS and the `:root` custom properties, once per site.
@@ -120,6 +123,8 @@ Muted text is the text colour blended 70% into the background, except on **Accen
 2. Never set your own width. Wrap the component in `<Section section={section}>`, which places it in the lane chosen in WordPress and applies spacing, surface and anchor.
 3. Page-level layout uses `mq()`; layout inside a component uses `cq()` (the element being measured gets `container-type: inline-size`).
 4. A repeater field needs a name unique across all components (`card_grid_items`, not `items`).
+5. Lay a component out on an inner wrapper, not on the `<Section>` element: a full-width section is a subgrid of the page grid, and a `gap` set on it squeezes the content lane.
+6. On a card fill (`--color-card`), the accent can fall just short of 4.5:1 (4.4:1 with some themes): use `--color-text` for text there, as Card Grid does for "Read more →".
 
 ## Adding a component
 1. `rnnbrwn-base/sections/components/<name>.php` returning `rs_layout(...)` (see `placeholder.php`).
@@ -127,5 +132,5 @@ Muted text is the text colour blended 70% into the background, except on **Accen
 3. A test page and rows in `showcase/seed.php` (each component has its own page under "Components"), switch it on for rnnbrwn.xyz (theme filter + `ENABLED` in `src/lib/components.ts`), re-run the seed and check rnnbrwn.xyz/components/<name>/.
 
 ## Test page and demo
-- `showcase/seed.php` creates the test pages shown on rnnbrwn.xyz: a "Components" overview (`/components/`) with one child page per component (`/components/hero/`, `/components/rich-text/`, `/components/placeholder/`), and the test Navigation menu linking them (run instructions in the file).
+- `showcase/seed.php` creates the test pages shown on rnnbrwn.xyz: a "Components" overview (`/components/`) with one child page per component (`/components/hero/`, `/components/rich-text/`, `/components/card-grid/`, …), and the test Navigation menu linking them (run instructions in the file).
 - `demo/` is a standalone page for comparing type and spacing presets: `cd demo && npm install && npm run dev`.

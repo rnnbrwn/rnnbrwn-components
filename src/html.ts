@@ -28,3 +28,19 @@ export function editorHtml(html: string | null | undefined, cmsUrl?: string, sit
   if (!cmsUrl && !siteUrl) return html;
   return html.replace(/href=(["'])(.*?)\1/g, (_, quote, url) => `href=${quote}${siteLink(url, cmsUrl, siteUrl)}${quote}`);
 }
+
+/**
+ * Where a WordPress link field goes, for anything rendered as a link: the site address, whether
+ * it opens in a new tab, and whether it's another website (a full address that isn't the CMS,
+ * whose uploaded files count as the site's own). Used by Button.astro and Card Grid's cards.
+ */
+export function linkTarget(
+  link: { url: string | null; target: string | null } | null | undefined,
+  cmsUrl?: string,
+  siteUrl?: string | URL,
+) {
+  const href = siteLink(link?.url, cmsUrl, siteUrl);
+  const newTab = link?.target === '_blank';
+  const external = /^https?:\/\//.test(href) && (!cmsUrl || new URL(href).origin !== new URL(cmsUrl).origin);
+  return { href, newTab, external };
+}

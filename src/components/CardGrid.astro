@@ -1,0 +1,316 @@
+---
+// Card Grid: an optional eyebrow, heading and intro, a grid of cards, then up to three buttons. Each card
+// is an optional image, eyebrow, heading, short text and one optional link; with a link the
+// whole card is clickable. The editor picks the most columns (2, 3 or 4, fewer when the space is
+// narrower, one on phones), the card look: Panel (filled, rounded) or Plain, and whether the
+// last card keeps a column's width or fills the rest of its row ("Last card").
+// WordPress half: rnnbrwn-base/sections/components/card-grid.php
+//
+// The heading is the card's link (so screen readers hear one link per card, named by its
+// heading), stretched over the whole card; the link text at the bottom ("Read more →") is only
+// a visual cue. Card headings are <h3> under the section's heading, or <h2> without one.
+// A Panel card's fill is only painted, reaching out around the card like a section panel, so
+// Panel and Plain cards are exactly the same size and line up with the section's heading.
+import Section from '../Section.astro';
+import ButtonRow, { type ButtonsField } from '../ButtonRow.astro';
+import { linkTarget } from '../html';
+import { choice, type SectionSettings } from '../settings';
+
+type Link = { title: string | null; url: string | null; target: string | null } | null;
+
+interface Card {
+  image: {
+    node: { sourceUrl: string; srcSet: string | null; altText: string | null; mediaDetails: { width: number; height: number } | null };
+  } | null;
+  eyebrow: string | null;
+  heading: string | null;
+  text: string | null;
+  link: Link;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    cardGridCards: Card[] | null;
+    cardGridButtons: ButtonsField;
+    columns: string[] | null;
+    cardStyle: string[] | null;
+    lastCard: string[] | null;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const columns = Math.min(4, Math.max(2, Number(choice(section.columns, '3')) || 3));
+const look = choice(section.cardStyle, 'panel') === 'plain' ? 'plain' : 'panel';
+const fill = choice(section.lastCard, 'column') === 'fill';
+const CardHeading = section.heading ? 'h3' : 'h2';
+const cards = (section.cardGridCards ?? []).filter((card) => card?.heading);
+
+// Which image size the browser should pick: a share of the section's lane, or the whole
+// screen on phones (one column).
+const lane = { narrow: 40, content: 60, wide: 80, full: 60 }[choice(section.width, 'content')] ?? 60;
+const sizes = `(min-width: ${lane}rem) ${Math.ceil(lane / columns)}rem, (min-width: 30rem) 50vw, 100vw`;
+// A last card that fills its row can be the whole lane wide.
+const fillSizes = `(min-width: ${lane}rem) ${lane}rem, 100vw`;
+---
+
+<Section section={section} class:list={['card-grid', `card-grid--${look}`, `card-grid--max-${columns}`, fill && 'card-grid--fill']}>
+  <div class="card-grid__inner">
+    {(section.eyebrow || section.heading || section.intro) && (
+      <div class="card-grid__header">
+        {section.eyebrow && <p class="card-grid__eyebrow">{section.eyebrow}</p>}
+        {section.heading && <h2 class="card-grid__heading">{section.heading}</h2>}
+        {section.intro && <p class="card-grid__intro">{section.intro}</p>}
+      </div>
+    )}
+
+    {cards.length > 0 && (
+      <ul class="card-grid__cards" role="list">
+        {cards.map((card, index) => {
+          const { href, newTab, external } = linkTarget(card.link, cmsUrl, Astro.site);
+          const image = card.image?.node;
+          return (
+            <li class:list={['card', href && 'card--link']}>
+              <CardHeading class="card__heading">
+                {href ? (
+                  <a
+                    class="card__link"
+                    href={href}
+                    target={newTab ? '_blank' : undefined}
+                    rel={newTab ? 'noopener' : undefined}
+                  >
+                    {card.heading}
+                    {newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
+                  </a>
+                ) : (
+                  card.heading
+                )}
+              </CardHeading>
+              {card.eyebrow && <p class="card__eyebrow">{card.eyebrow}</p>}
+              {image && (
+                <img
+                  class="card__image"
+                  src={image.sourceUrl}
+                  srcset={image.srcSet ?? undefined}
+                  sizes={fill && index === cards.length - 1 ? fillSizes : sizes}
+                  width={image.mediaDetails?.width}
+                  height={image.mediaDetails?.height}
+                  alt={image.altText ?? ''}
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              {card.text && <p class="card__text">{card.text}</p>}
+              {href && (
+                <span class="button button--text card__more" aria-hidden="true">
+                  {card.link?.title && <span>{card.link.title}</span>}
+                  <svg class:list={['button__icon', `button__icon--${newTab || external ? 'out' : 'next'}`]} viewBox="0 0 16 16" focusable="false">
+                    <path d={newTab || external ? 'M4 12 12 4M5.5 4H12v6.5' : 'M2 8h11M9 4l4 4-4 4'} />
+                  </svg>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+
+    <ButtonRow buttons={section.cardGridButtons} cmsUrl={cmsUrl} class="card-grid__buttons" />
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'sass:list';
+  @use 'sass:map';
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the grid
+  // measures to choose its number of columns.
+  .card-grid__inner {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-l);
+  }
+
+  .card-grid__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  // Eyebrows (the section's, like Hero's, and each card's smaller one): a short muted label.
+  .card-grid__eyebrow,
+  .card__eyebrow {
+    color: var(--color-muted);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card-grid__eyebrow {
+    font-size: var(--step-0);
+  }
+
+  .card-grid__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .card-grid__intro {
+    font-size: var(--step-1);
+  }
+
+  // ---------- The grid ----------
+  // Up to the editor's number of columns (card-grid--max-2|3|4); a column is dropped whenever
+  // cards would get narrower than $card-min, down to one. The widths where each number of
+  // columns fits are worked out here (with the largest gap), so the CSS always knows how many
+  // columns there are: that's what lets the last card fill exactly the rest of its row.
+  // The gap leaves room for Panel fills, which reach out by --card-pad.
+  $card-gap-max: list.nth(map.get(space-scale(), 'xl'), 2);
+  @function fits($n) {
+    @return $n * $card-min + ($n - 1) * $card-gap-max;
+  }
+
+  .card-grid__cards {
+    --card-pad: var(--space-s);
+    --card-gap: var(--space-xl);
+    --cols: 1;
+
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: var(--card-gap);
+    padding: 0;
+    list-style: none;
+  }
+
+  @for $max from 2 through 4 {
+    @for $n from 2 through $max {
+      @include cq(fits($n)) {
+        .card-grid--max-#{$max} .card-grid__cards { --cols: #{$n}; }
+
+        // Last card: fill the rest of its row. It's in column $c when its position is $c more
+        // than a multiple of $n, and then spans the $n - $c + 1 columns left. First undo the
+        // rule for fewer columns (narrower containers' rules still match here), with the same
+        // specificity so it wins by coming later.
+        .card-grid--fill.card-grid--max-#{$max} .card:last-child:nth-child(n) {
+          grid-column: auto;
+        }
+        @for $c from 1 through $n - 1 {
+          .card-grid--fill.card-grid--max-#{$max} .card:last-child:nth-child(#{$n}n + #{$c}) {
+            grid-column: span #{$n - $c + 1};
+          }
+        }
+
+        // Its image stays the height of the others (a column wide at 3:2) instead of growing.
+        .card-grid--fill.card-grid--max-#{$max} .card:last-child .card__image {
+          aspect-ratio: auto;
+          block-size: calc((100cqi - #{$n - 1} * var(--card-gap)) / #{$n} / 1.5);
+        }
+      }
+    }
+  }
+
+  // ---------- A card ----------
+  // The heading comes first for screen readers; the image and eyebrow are shown above it.
+  .card {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    max-inline-size: none;
+  }
+
+  .card__image { order: -2; }
+  .card__eyebrow { order: -1; }
+
+  .card__image {
+    inline-size: 100%;
+    aspect-ratio: 3 / 2;
+    margin-block-end: var(--space-2xs);
+    object-fit: cover;
+    border-radius: var(--radius-s);
+  }
+
+  .card__eyebrow {
+    font-size: var(--step--1);
+  }
+
+  .card__heading {
+    font-size: var(--step-2);
+  }
+
+  .card__text {
+    max-inline-size: none;
+  }
+
+  // The visual "Read more →": pushed to the bottom so the cue lines up across a row. In the
+  // text colour: the accent isn't always readable enough on a card's fill (4.4:1 at worst).
+  .card__more {
+    align-self: flex-start;
+    color: var(--color-text);
+    margin-block-start: auto;
+  }
+
+  // Panel: the fill is painted behind the card, reaching out by --card-pad, never laid out.
+  .card-grid--panel .card::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: calc(var(--card-pad) * -1);
+    border-radius: var(--radius-l);
+    background-color: var(--color-card);
+    transition: box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  // ---------- The whole card is the link ----------
+  .card__link {
+    text-decoration: none;
+
+    // Covers the card, and the panel around it, so a click anywhere follows the link.
+    &::after {
+      content: '';
+      position: absolute;
+      z-index: 1;
+      inset: calc(var(--card-pad) * -1);
+      border-radius: var(--radius-l);
+    }
+
+    // The focus outline goes round the whole card rather than the heading.
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  .card--link:hover {
+    .card__heading {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.15em;
+    }
+
+    // Like the buttons: the text link's underline thickens and its arrow nudges.
+    :global(.card__more) { text-decoration-thickness: 2px; }
+    :global(.button__icon--next) { translate: 0.2em 0; }
+    :global(.button__icon--out) { translate: 0.12em -0.12em; }
+  }
+
+  // A Panel card lifts on hover, like a button, and drops again while pressed.
+  .card-grid--panel .card--link:hover::before { box-shadow: var(--shadow-raised); }
+  .card-grid--panel .card--link:active::before { box-shadow: none; }
+
+  // ButtonRow's own element, so reached with :global().
+  .card-grid__inner > :global(.card-grid__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+</style>

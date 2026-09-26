@@ -1,14 +1,16 @@
 @use 'sass:map';
+@use 'sass:meta';
 @use '../settings' as s;
 
 // Container query, for inside components. The component's outer element needs
 // container-type: inline-size; the rules inside apply to its descendants.
 //   @include cq(md) { ... }
+//   @include cq(28rem) { ... }   (a size worked out from settings, e.g. by Card Grid)
 @mixin cq($from, $name: null) {
-  @if not map.has-key(s.$containers, $from) {
-    @error 'Unknown container size `#{$from}`. Use one of: #{map.keys(s.$containers)}';
+  @if meta.type-of($from) != number and not map.has-key(s.$containers, $from) {
+    @error 'Unknown container size `#{$from}`. Use one of: #{map.keys(s.$containers)}, or a length';
   }
-  $size: map.get(s.$containers, $from);
+  $size: if(meta.type-of($from) == number, $from, map.get(s.$containers, $from));
   @if $name {
     @container #{$name} (min-width: #{$size}) { @content; }
   } @else {
