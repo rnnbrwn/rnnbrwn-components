@@ -4,8 +4,8 @@
 @use 'tools' as *;
 
 $type-presets: (
-  compact:    (base: (1rem, 1.125rem), ratio: (1.125, 1.2)),
-  balanced:   (base: (1rem, 1.125rem), ratio: (1.2, 1.25)),
+  compact:    (base: (1rem, 1rem),      ratio: (1.15, 1.2)),
+  balanced:   (base: (1rem, 1.0625rem), ratio: (1.2, 1.2)),
   expressive: (base: (1rem, 1.25rem),  ratio: (1.2, 1.333)),
 );
 
