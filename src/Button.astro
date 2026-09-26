@@ -1,0 +1,27 @@
+---
+// A button-styled link (.button in scss/base/_buttons.scss), from an ACF link field.
+// Renders nothing if the link is empty. Links to the CMS's own pages become site links.
+import { siteLink } from './html';
+
+interface Props {
+  link: { title: string | null; url: string | null; target: string | null } | null | undefined;
+  cmsUrl?: string;
+  variant?: 'primary' | 'secondary';
+}
+
+const { link, cmsUrl, variant = 'primary' } = Astro.props;
+const href = siteLink(link?.url, cmsUrl);
+const newTab = link?.target === '_blank';
+---
+
+{href && (
+  <a
+    class:list={['button', variant === 'secondary' && 'button--secondary']}
+    href={href}
+    target={newTab ? '_blank' : undefined}
+    rel={newTab ? 'noopener' : undefined}
+  >
+    {link?.title || href}
+    {newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
+  </a>
+)}

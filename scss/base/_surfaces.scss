@@ -18,6 +18,8 @@ $surfaces: (light, subtle, accent, dark);
   --color-text: var(--brand-dark);
   --color-accent: var(--brand-accent);
   --color-on-accent: var(--brand-on-accent);
+  --muted-strength: 70%;
+  --tint-strength: 80%;
 }
 
 .surface-subtle {
@@ -25,13 +27,23 @@ $surfaces: (light, subtle, accent, dark);
   --color-text: var(--brand-dark);
   --color-accent: var(--brand-accent);
   --color-on-accent: var(--brand-on-accent);
+  --muted-strength: 70%;
+  --tint-strength: 80%;
 }
 
+// On a mid-tone accent even the full text colour only just passes the 4.5:1 contrast
+// minimum, so muted text isn't dimmed at all here (labels rely on size and weight instead),
+// and photos behind text are tinted more strongly.
+//
+// --tint-strength: how much of the surface colour covers a photo that has text on it
+// (e.g. a Hero's background image), so the text stays readable over any photo.
 .surface-accent {
   --color-bg: var(--brand-accent);
   --color-text: var(--brand-on-accent);
   --color-accent: var(--brand-on-accent);
   --color-on-accent: var(--brand-accent);
+  --muted-strength: 100%;
+  --tint-strength: 90%;
 }
 
 .surface-dark {
@@ -39,6 +51,8 @@ $surfaces: (light, subtle, accent, dark);
   --color-text: var(--brand-light);
   --color-accent: var(--brand-accent-on-dark);
   --color-on-accent: var(--brand-on-accent-on-dark);
+  --muted-strength: 70%;
+  --tint-strength: 80%;
   color-scheme: dark; // dark scrollbars and form controls
 }
 
@@ -65,7 +79,7 @@ $surfaces: (light, subtle, accent, dark);
 .surface-subtle,
 .surface-accent,
 .surface-dark {
-  --color-muted: color-mix(in oklab, var(--color-text) 70%, var(--color-bg));
+  --color-muted: color-mix(in oklab, var(--color-text) var(--muted-strength), var(--color-bg));
   --color-border: color-mix(in oklab, var(--color-text) 18%, var(--color-bg));
   --color-card: color-mix(in oklab, var(--color-text) 6%, var(--color-bg));
 }

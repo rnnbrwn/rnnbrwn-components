@@ -1,0 +1,41 @@
+// Buttons: <a class="button"> (solid, the accent colour) and .button--secondary (outline).
+// Global, so any component or page can use them; colours come from the roles, so they
+// work on every surface (on Accent the solid button reverses to the on-accent colour).
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-block-size: var(--tap-target);
+  padding: var(--space-2xs) var(--space-m);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    background-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
+    border-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+.button--secondary {
+  border-color: currentColor;
+  background-color: transparent;
+  color: var(--color-text);
+
+  &:hover {
+    border-color: currentColor;
+    background-color: var(--color-card);
+  }
+}

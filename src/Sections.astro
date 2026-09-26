@@ -10,17 +10,22 @@ import type { SectionSettings } from './settings';
 interface Props {
   sections: SectionSettings[] | null | undefined;
   cmsUrl?: string;
+  /**
+   * The first section gives the page its main heading (<h1>), e.g. a Hero. Set false on a
+   * page that already has its own <h1>, so there's only ever one.
+   */
+  mainHeading?: boolean;
 }
 
-const { sections, cmsUrl } = Astro.props;
+const { sections, cmsUrl, mainHeading = true } = Astro.props;
 const byType: Record<string, any> = Object.fromEntries(
   Object.entries(components).map(([name, entry]) => [typeName(name), entry.component]),
 );
 ---
 
 {
-  (sections ?? []).map((section) => {
+  (sections ?? []).map((section, index) => {
     const Component = byType[section.__typename];
-    return Component ? <Component section={section} cmsUrl={cmsUrl} /> : null;
+    return Component ? <Component section={section} cmsUrl={cmsUrl} main={mainHeading && index === 0} /> : null;
   })
 }

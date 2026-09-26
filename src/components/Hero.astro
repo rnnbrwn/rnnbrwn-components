@@ -1,0 +1,184 @@
+---
+// Hero: the big opening section of a page. An eyebrow, the heading, an intro and up to two
+// buttons, either centred on the section's colour ("Centred") or over a photo tinted with it
+// ("Background image"), in a Standard or Tall height.
+// WordPress half: rnnbrwn-base/sections/components/hero.php
+//
+// The heading is the page's <h1> when the Hero is the page's first section (`main`), otherwise
+// an <h2>. A background photo is decoration (empty alt) unless the editor turns on "Describe the
+// photo to screen readers"; it's tinted with the surface colour (--tint-strength) so the text
+// stays readable over any photo, and it fills the section like a panel (or edge to edge at full
+// width) without changing the layout.
+import Section from '../Section.astro';
+import Button from '../Button.astro';
+import { choice, type SectionSettings } from '../settings';
+
+type Link = { title: string | null; url: string | null; target: string | null } | null;
+
+interface Props {
+  section: SectionSettings & {
+    variant: string[] | null;
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    primaryLink: Link;
+    secondaryLink: Link;
+    height: string[] | null;
+    image: {
+      node: { sourceUrl: string; srcSet: string | null; altText: string | null; mediaDetails: { width: number; height: number } | null };
+    } | null;
+    focus: string[] | null;
+    imageInformative: boolean | null;
+    alignment: string[] | null;
+  };
+  cmsUrl?: string;
+  main?: boolean;
+}
+
+const { section, cmsUrl, main = false } = Astro.props;
+
+const photo = choice(section.variant, 'centred') === 'background_image' ? section.image?.node : undefined;
+const alignment = photo ? choice(section.alignment, 'left') : 'centre';
+const tall = choice(section.height, 'standard') === 'tall';
+const Heading = main ? 'h1' : 'h2';
+// The first section's photo is the first thing seen: load it straight away, before other images.
+const priority = main ? { loading: 'eager', fetchpriority: 'high' } : { loading: 'lazy' };
+
+// Which image size the browser should pick, from how wide the section's lane is.
+const width = choice(section.width, 'content');
+const sizes = {
+  full: '100vw',
+  wide: '(min-width: 80rem) 80rem, 100vw',
+  content: '(min-width: 60rem) 60rem, 100vw',
+  narrow: '(min-width: 40rem) 40rem, 100vw',
+}[width] ?? '100vw';
+---
+
+<Section
+  section={section}
+  class:list={['hero', photo && 'hero--photo', `hero--${alignment}`, tall && 'hero--tall']}
+>
+  {photo && (
+    <div class="hero__media" data-focus={choice(section.focus, 'center')}>
+      <img
+        src={photo.sourceUrl}
+        srcset={photo.srcSet ?? undefined}
+        sizes={sizes}
+        width={photo.mediaDetails?.width}
+        height={photo.mediaDetails?.height}
+        alt={section.imageInformative ? (photo.altText ?? '') : ''}
+        decoding="async"
+        {...priority}
+      />
+    </div>
+  )}
+
+  <div class="hero__content">
+    {section.eyebrow && <p class="hero__eyebrow">{section.eyebrow}</p>}
+    <Heading class="hero__heading">{section.heading}</Heading>
+    {section.intro && <p class="hero__intro">{section.intro}</p>}
+    {(section.primaryLink?.url || section.secondaryLink?.url) && (
+      <div class="hero__buttons">
+        <Button link={section.primaryLink} cmsUrl={cmsUrl} />
+        <Button link={section.secondaryLink} cmsUrl={cmsUrl} variant="secondary" />
+      </div>
+    )}
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  .hero {
+    position: relative;
+  }
+
+  .hero__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-s);
+  }
+
+  .hero--centre .hero__content {
+    align-items: center;
+    text-align: center;
+  }
+
+  // Tall: generous space around the content, which sits in the middle.
+  .hero--tall .hero__content {
+    justify-content: center;
+    min-block-size: calc(var(--space-3xl) * 4);
+  }
+
+  .hero__eyebrow {
+    color: var(--color-muted);
+    font-size: var(--step-0);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    // Over a photo, dimmed text can't be relied on to stay readable: use the full text colour.
+    .hero--photo & { color: var(--color-text); }
+  }
+
+  .hero__heading {
+    max-inline-size: 22ch;
+    font-size: var(--step-6);
+    line-height: 1.05;
+  }
+
+  .hero__intro {
+    max-inline-size: var(--measure);
+    font-size: var(--step-1);
+  }
+
+  .hero__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-block-start: var(--space-xs);
+
+    .hero--centre & { justify-content: center; }
+  }
+
+  // ---------- Background image ----------
+  // The photo sits behind the content and never affects the layout. Not full width, it fills
+  // the same area as a panel would (out into the gutter, rounded); full width, edge to edge.
+
+  .hero--photo {
+    isolation: isolate;
+  }
+
+  .hero__media {
+    position: absolute;
+    z-index: -1;
+    inset-block: min(var(--space-2xs), var(--section-space, var(--space-2xl)) / 2);
+    inset-inline: calc(var(--gutter) * -1);
+    overflow: hidden;
+    border-radius: var(--radius-l);
+
+    img {
+      inline-size: 100%;
+      block-size: 100%;
+      object-fit: cover;
+    }
+
+    &[data-focus='top'] img { object-position: 50% 0%; }
+    &[data-focus='bottom'] img { object-position: 50% 100%; }
+
+    // The tint: the surface's own colour over the photo, strong enough for its text.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: color-mix(in srgb, var(--color-bg) var(--tint-strength), transparent);
+    }
+  }
+
+  .hero--photo[data-width='full'] .hero__media {
+    grid-column: 1 / -1;
+    inset: 0;
+    border-radius: 0;
+  }
+</style>

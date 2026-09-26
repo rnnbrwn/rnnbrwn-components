@@ -1,24 +1,32 @@
 <?php
-// Creates (or refreshes) the "components" test page shown at rnnbrwn.xyz/components:
-// a page on the Sections template holding test versions of every component.
-// Safe to re-run: it replaces the page's sections instead of making a new page.
-// When a component is added to the library, add its test rows below.
+// Creates (or refreshes) the component test pages shown at rnnbrwn.xyz/components/:
+// a "Components" overview page and one child page per component (/components/hero/ ...),
+// each on the Sections template holding test versions of that component, plus the test
+// Navigation menu linking them. Safe to re-run: it updates the pages instead of duplicating them.
+// When a component is added to the library, give it a page below and add its test rows.
 //
 // Run from platform/rnnbrwn-cms:
 //   export SITE=rnnbrwn-xyz DB_NAME=cms_rnnbrwn_xyz
 //   docker compose --env-file .env.local run --rm -T wpcli eval "$(sed 1d ../rnnbrwn-components/showcase/seed.php)"
 
-$page = get_page_by_path( 'components' );
-$id   = $page ? $page->ID : wp_insert_post( [
-	'post_type'   => 'page',
-	'post_status' => 'publish',
-	'post_title'  => 'Components',
-	'post_name'   => 'components',
-] );
-update_post_meta( $id, '_wp_page_template', 'template-sections.php' );
+// ---------- Pages ----------
 
-// Page settings: a light page (the test page's preview switch can show the others).
-update_field( 'field_rs_page_surface', 'light', $id );
+$test_page = function ( $slug, $title, $parent = 0, $order = 0 ) {
+	$page = get_page_by_path( $parent ? "components/{$slug}" : $slug );
+	$id   = $page ? $page->ID : wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_name' => $slug ] );
+	wp_update_post( [ 'ID' => $id, 'post_title' => $title, 'post_parent' => $parent, 'menu_order' => $order ] );
+	update_post_meta( $id, '_wp_page_template', 'template-sections.php' );
+	// Page settings: a light page (the test pages' preview switch can show the others).
+	update_field( 'field_rs_page_surface', 'light', $id );
+	return $id;
+};
+
+$id              = $test_page( 'components', 'Components' );
+$component_pages = [
+	'hero'        => $test_page( 'hero', 'Hero', $id, 1 ),
+	'rich_text'   => $test_page( 'rich-text', 'Rich Text', $id, 2 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 3 ),
+];
 
 // ---------- Placeholder: every width, background and spacing option of the shared settings ----------
 $placeholder = fn( $heading, $settings, $note = '' ) => array_merge( [
@@ -58,6 +66,7 @@ $test_logo = function ( $option, $name, $text ) {
 };
 $logo_id      = $test_logo( 'rs_test_logo_id', 'test-logo.png', [ 29, 29, 31 ] );
 $logo_dark_id = $test_logo( 'rs_test_logo_dark_id', 'test-logo-dark.png', [ 255, 255, 255 ] );
+update_field( 'field_rs_navigation_logo', $logo_id, 'option' );
 update_field( 'field_rs_navigation_logo_dark', $logo_dark_id, 'option' );
 
 // A WordPress menu (Appearance → Menus) in the "Main navigation" location, rebuilt each time.
@@ -66,9 +75,9 @@ if ( $menu ) {
 	wp_delete_nav_menu( $menu->term_id );
 }
 $menu_id = wp_create_nav_menu( 'Main navigation (test)' );
-$add_page = fn( $slug ) => wp_update_nav_menu_item( $menu_id, 0, [
+$add_page = fn( $page_id ) => wp_update_nav_menu_item( $menu_id, 0, [
 	'menu-item-object'    => 'page',
-	'menu-item-object-id' => get_page_by_path( $slug )->ID,
+	'menu-item-object-id' => $page_id,
 	'menu-item-type'      => 'post_type',
 	'menu-item-status'    => 'publish',
 ] );
@@ -79,22 +88,85 @@ $add_link = fn( $title, $url, $target = '' ) => wp_update_nav_menu_item( $menu_i
 	'menu-item-type'   => 'custom',
 	'menu-item-status' => 'publish',
 ] );
-$add_page( 'home' );
-$add_page( 'components' );
-$add_link( 'Anchor test', '/components/#anchor-test' );
-$add_page( 'contact' );
-$add_link( 'Example site', 'https://example.com', '_blank' );
+// The overview, then one link per component page.
+$add_page( $id );
+foreach ( $component_pages as $page_id ) {
+	$add_page( $page_id );
+}
 set_theme_mod( 'nav_menu_locations', array_merge( (array) get_theme_mod( 'nav_menu_locations' ), [ 'main_navigation' => $menu_id ] ) );
 
 update_field( 'field_rs_navigation_source', 'menu', 'option' );
 // The one-page alternative, ready to try by switching Links to "Sections on the site".
 update_field( 'field_rs_navigation_navigation_sections', [
-	[ 'target' => '/components/#rich-text', 'label' => 'Rich Text' ],
-	[ 'target' => '/components/#surfaces', 'label' => 'Surfaces' ],
-	[ 'target' => '/components/#anchor-test', 'label' => 'Anchor test' ],
+	[ 'target' => '/components/hero/#hero', 'label' => 'Hero' ],
+	[ 'target' => '/components/rich-text/#rich-text', 'label' => 'Rich Text' ],
+	[ 'target' => '/components/placeholder/#surfaces', 'label' => 'Surfaces' ],
 ], 'option' );
 update_field( 'field_rs_navigation_background', 'page', 'option' );
 update_field( 'field_rs_navigation_width', 'wide', 'option' );
+
+// ---------- Hero ----------
+
+// A deliberately difficult test photo (pure white, pure black and bright colour blocks), so the
+// tint over it is tested against the worst case, not a friendly photo. Made once, then reused.
+$photo_id = (int) get_option( 'rs_test_hero_photo_id' );
+if ( ! $photo_id || ! get_post( $photo_id ) ) {
+	$w     = 2000;
+	$h     = 1125;
+	$photo = imagecreatetruecolor( $w, $h );
+	for ( $x = 0; $x < $w; $x++ ) {
+		$v = (int) round( 255 * $x / ( $w - 1 ) );
+		imageline( $photo, $x, 0, $x, $h, imagecolorallocate( $photo, $v, $v, $v ) );
+	}
+	$blocks = [ [ 255, 255, 255 ], [ 0, 0, 0 ], [ 229, 0, 83 ], [ 254, 206, 0 ], [ 59, 91, 219 ], [ 255, 255, 255 ] ];
+	foreach ( $blocks as $i => $rgb ) {
+		$x0 = (int) ( $i * $w / count( $blocks ) );
+		imagefilledrectangle( $photo, $x0, (int) ( $h * 0.3 ), $x0 + (int) ( $w / count( $blocks ) ), (int) ( $h * 0.7 ), imagecolorallocate( $photo, ...$rgb ) );
+	}
+	imagefilledellipse( $photo, (int) ( $w * 0.8 ), (int) ( $h * 0.15 ), 300, 300, imagecolorallocate( $photo, 255, 255, 255 ) );
+	$file = wp_tempnam( 'test-hero-photo.jpg' );
+	imagejpeg( $photo, $file, 85 );
+	$photo_id = media_handle_sideload( [ 'name' => 'test-hero-photo.jpg', 'tmp_name' => $file ], 0, 'Test hero photo' );
+	update_post_meta( $photo_id, '_wp_attachment_image_alt', 'Test pattern of black, white and coloured stripes' );
+	update_option( 'rs_test_hero_photo_id', $photo_id );
+}
+
+$hero = fn( $heading, $settings = [] ) => array_merge( [
+	'acf_fc_layout'     => 'hero',
+	'variant'           => 'centred',
+	'eyebrow'           => 'Eyebrow label',
+	'heading'           => $heading,
+	'intro'             => 'An intro of a sentence or two, saying what the page is about and what to do next.',
+	'primary_link'      => [ 'title' => 'Main button', 'url' => home_url( '/contact/' ), 'target' => '' ],
+	'secondary_link'    => [ 'title' => 'Second button', 'url' => home_url( '/components/placeholder/#surfaces' ), 'target' => '' ],
+	'height'            => 'standard',
+	'image'             => '',
+	'focus'             => 'center',
+	'image_informative' => 0,
+	'alignment'         => 'left',
+	'width'             => 'content',
+	'spacing'           => 'm',
+	'background'        => 'page',
+	'anchor'            => '',
+], $settings );
+// The photo Heroes use a real photo: the media-library image titled "penrice" when there is one
+// (uploaded locally for testing), otherwise the test pattern. The last Hero always uses the
+// pattern, to keep the worst case for text contrast on the page.
+$real_photo = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'title' => 'penrice', 'numberposts' => 1 ] );
+$photo      = [ 'variant' => 'background_image', 'image' => $real_photo ? $real_photo[0]->ID : $photo_id, 'width' => 'full' ];
+$pattern    = [ 'variant' => 'background_image', 'image' => $photo_id, 'width' => 'full' ];
+
+$sections_hero = [
+	$hero( 'Hero: centred', [ 'anchor' => 'hero' ] ),
+	$hero( 'Hero: centred, tall, on Accent, full width', [ 'height' => 'tall', 'background' => 'accent', 'width' => 'full' ] ),
+	$hero( 'Hero: centred on Dark, as a panel', [ 'background' => 'dark' ] ),
+	$hero( 'Hero: heading only', [ 'eyebrow' => '', 'intro' => '', 'primary_link' => '', 'secondary_link' => '' ] ),
+	$hero( 'Hero: background image, left aligned', $photo ),
+	$hero( 'Hero: background image, tall, centred, on Dark', $photo + [ 'height' => 'tall', 'alignment' => 'centre', 'background' => 'dark', 'focus' => 'top' ] ),
+	$hero( 'Hero: background image on Accent, described photo', $photo + [ 'background' => 'accent', 'image_informative' => 1 ] ),
+	$hero( 'Hero: background image, wide, on Subtle', array_merge( $photo, [ 'width' => 'wide', 'background' => 'subtle', 'secondary_link' => [ 'title' => 'Other site', 'url' => 'https://example.com', 'target' => '_blank' ] ] ) ),
+	$hero( 'Hero: contrast test pattern (worst case)', $pattern ),
+];
 
 // ---------- Rich Text ----------
 
@@ -153,9 +225,20 @@ $sections = [
 	$placeholder( 'Spacing: none', [ 'spacing' => 'none', 'background' => 'subtle' ] ),
 	$placeholder( 'Spacing: small', [ 'spacing' => 's', 'background' => 'subtle' ] ),
 	$placeholder( 'Spacing: large', [ 'spacing' => 'l', 'background' => 'subtle' ] ),
-	$placeholder( 'Anchor ID', [ 'anchor' => 'anchor-test' ], 'Reachable at /components/#anchor-test.' ),
+	$placeholder( 'Anchor ID', [ 'anchor' => 'anchor-test' ], 'Reachable at /components/placeholder/#anchor-test.' ),
 ];
 
-update_field( 'field_rs_sections', array_merge( $sections_rich_text, $sections ), $id );
+// ---------- Fill the pages ----------
 
-WP_CLI::success( sprintf( 'Components page %d has %d sections.', $id, count( $sections_rich_text ) + count( $sections ) ) );
+// The overview has no sections of its own: the site lists the component pages there.
+update_field( 'field_rs_sections', [], $id );
+$rows = [
+	'hero'        => $sections_hero,
+	'rich_text'   => $sections_rich_text,
+	'placeholder' => $sections,
+];
+foreach ( $rows as $name => $sections_for_page ) {
+	update_field( 'field_rs_sections', $sections_for_page, $component_pages[ $name ] );
+	WP_CLI::log( sprintf( '%s (page %d): %d sections', get_the_title( $component_pages[ $name ] ), $component_pages[ $name ], count( $sections_for_page ) ) );
+}
+WP_CLI::success( 'Component test pages and the test menu are ready.' );

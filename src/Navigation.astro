@@ -1,6 +1,7 @@
 ---
 // Navigation: the site header. The logo (or the site title) links home; the main links sit
-// in the bar on wider screens and behind a menu button on small ones (below the md breakpoint).
+// in the bar on wider screens and, on small ones (below the md breakpoint), behind a menu
+// button that opens them full screen, hiding the page.
 // WordPress half: rnnbrwn-base/sections/site/navigation.php (wp-admin → Navigation). The links
 // come from a WordPress menu (Appearance → Menus, "Main navigation" location) or, for one-page
 // sites, from sections picked by their Anchor ID.
@@ -12,9 +13,10 @@
 //
 // Accessibility: a skip link first; the menu button says whether the menu is open
 // (aria-expanded) and which element it controls; closed links are hidden from keyboards and
-// screen readers; Escape, clicking outside or tabbing away closes the menu; the current page
-// is marked (aria-current); new-tab links say so; motion follows prefers-reduced-motion;
-// without JavaScript the links are simply shown.
+// screen readers; while the full-screen menu is open the page behind is `inert` (out of reach
+// of keyboards and screen readers) and can't scroll; Escape, the button or following a link
+// closes it; the current page is marked (aria-current); new-tab links say so; motion follows
+// prefers-reduced-motion; without JavaScript the links are simply shown.
 import { siteLink } from './html';
 import { choice } from './settings';
 import type { NavigationData } from './graphql';
@@ -129,12 +131,39 @@ const links = source
   document.querySelectorAll<HTMLElement>('[data-site-nav]').forEach((header) => {
     const button = header.querySelector<HTMLButtonElement>('.site-nav__toggle');
     const menu = header.querySelector<HTMLElement>('.site-nav__menu');
-    if (!button || !menu) return;
+    const bar = header.querySelector<HTMLElement>('.site-nav__bar');
+    if (!button || !menu || !bar) return;
+
+    // While the full-screen menu is open, everything else on the page is made inert: it can't
+    // be focused, clicked or read by screen readers. Only what this adds is removed again.
+    let madeInert: Element[] = [];
+    const hidePage = (hide: boolean) => {
+      madeInert.forEach((element) => element.removeAttribute('inert'));
+      madeInert = [];
+      if (!hide) return;
+      for (let node: Element = header; node.parentElement && node !== document.body; node = node.parentElement) {
+        for (const sibling of node.parentElement.children) {
+          if (sibling !== node && !sibling.hasAttribute('inert') && sibling.tagName !== 'SCRIPT') {
+            sibling.setAttribute('inert', '');
+            madeInert.push(sibling);
+          }
+        }
+      }
+    };
 
     const isOpen = () => button.getAttribute('aria-expanded') === 'true';
     const setOpen = (open: boolean, { returnFocus = false } = {}) => {
+      if (open) {
+        // The menu covers the screen from the top, so the bar must be at the top too: if the
+        // page is scrolled a little (the header part-way off screen), bring it back into view.
+        const top = header.getBoundingClientRect().top;
+        if (top < 0) window.scrollBy({ top, behavior: 'instant' });
+        // The links start just below the bar.
+        header.style.setProperty('--site-nav-bar-bottom', `${bar.getBoundingClientRect().bottom}px`);
+      }
       button.setAttribute('aria-expanded', String(open));
       header.toggleAttribute('data-open', open);
+      hidePage(open && !wide.matches);
       if (!open && returnFocus) button.focus();
     };
 
@@ -146,15 +175,6 @@ const links = source
         event.preventDefault();
         setOpen(false, { returnFocus: true });
       }
-    });
-
-    // Tabbing out of the header, or clicking anywhere else, closes it.
-    header.addEventListener('focusout', (event) => {
-      const next = event.relatedTarget as Node | null;
-      if (next && !header.contains(next)) setOpen(false);
-    });
-    document.addEventListener('click', (event) => {
-      if (isOpen() && !header.contains(event.target as Node)) setOpen(false);
     });
 
     // Following a link (e.g. to a section further down this page) closes it.
@@ -300,30 +320,56 @@ const links = source
     }
   }
 
-  // Small screens: a panel that drops down under the bar, full width, with a subtle fade and slide.
-  .site-nav[data-enhanced] .site-nav__menu {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 100%;
-    padding-inline: var(--gutter);
-    background-color: var(--color-bg);
-    border-block: 1px solid var(--color-border);
+  // ---------- Small screens: the menu opens full screen ----------
+  // It covers the whole screen in the navigation's own colour, hiding the page; the bar (logo
+  // and close button) stays on top. It fades in and the links rise slightly into place.
 
-    // Closed: invisible, and (via visibility) out of the tab order and hidden from screen readers.
-    visibility: hidden;
-    opacity: 0;
-    translate: 0 calc(var(--space-xs) * -1);
-    transition:
-      opacity var(--duration-base) var(--ease-out),
-      translate var(--duration-base) var(--ease-out),
-      visibility 0s linear var(--duration-base);
-  }
+  @include mq-below(md) {
+    .site-nav[data-enhanced] .site-nav__menu {
+      position: fixed;
+      inset: 0;
+      z-index: -1; // under the bar, over the page (the header is above the page)
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-block: var(--site-nav-bar-bottom, calc(var(--tap-target) + var(--space-xs) * 2)) var(--space-xl);
+      padding-inline: var(--gutter);
+      background-color: var(--color-bg);
 
-  .site-nav[data-enhanced][data-open] .site-nav__menu {
-    visibility: visible;
-    opacity: 1;
-    translate: none;
-    transition-delay: 0s;
+      // Closed: invisible, and (via visibility) out of the tab order and hidden from screen readers.
+      visibility: hidden;
+      opacity: 0;
+      transition:
+        opacity var(--duration-base) var(--ease-out),
+        visibility 0s linear var(--duration-base);
+
+      .site-nav__links {
+        border-block-start: 1px solid var(--color-border);
+        translate: 0 var(--space-s);
+        transition: translate var(--duration-base) var(--ease-out);
+
+        li { border-block-end: 1px solid var(--color-border); }
+        li + li { border-block-start: none; }
+
+        a {
+          padding-block: var(--space-xs);
+          font-size: var(--step-3);
+          font-family: var(--font-heading);
+        }
+      }
+    }
+
+    .site-nav[data-enhanced][data-open] .site-nav__menu {
+      visibility: visible;
+      opacity: 1;
+      transition-delay: 0s;
+
+      .site-nav__links { translate: none; }
+    }
+
+    // The page behind doesn't scroll while the menu is open.
+    :global(html:has(.site-nav[data-open])) {
+      overflow: hidden;
+    }
   }
 
   // ---------- Wider screens: the links sit in the bar, no menu button ----------
@@ -334,17 +380,8 @@ const links = source
       display: none;
     }
 
-    .site-nav__menu,
-    .site-nav[data-enhanced] .site-nav__menu {
-      position: static;
+    .site-nav__menu {
       flex-basis: auto;
-      padding-inline: 0;
-      background: none;
-      border: none;
-      visibility: visible;
-      opacity: 1;
-      translate: none;
-      transition: none;
     }
 
     .site-nav__links {

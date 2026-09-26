@@ -2,7 +2,7 @@
 // Pairs are (small screen, large screen).
 $type-base: (1rem, 1.125rem) !default;   // 16px -> 18px
 $type-ratio: (1.2, 1.25) !default;
-$type-steps: (-2, 5) !default;           // --step--2 ... --step-5
+$type-steps: (-2, 6) !default;           // --step--2 ... --step-6 (6: display size, e.g. a Hero heading)
 
 $fonts: (
   body: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),

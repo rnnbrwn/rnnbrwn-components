@@ -11,3 +11,15 @@
     @content;
   }
 }
+
+// The opposite: only BELOW a breakpoint, for things that exist only on small screens
+// (e.g. the full-screen navigation menu). Prefer mobile-first mq() for everything else.
+//   @include mq-below(md) { ... }
+@mixin mq-below($to) {
+  @if not map.has-key(s.$breakpoints, $to) {
+    @error 'Unknown breakpoint `#{$to}`. Use one of: #{map.keys(s.$breakpoints)}';
+  }
+  @media not (min-width: map.get(s.$breakpoints, $to)) {
+    @content;
+  }
+}
