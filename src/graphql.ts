@@ -1,7 +1,7 @@
 import { components, type ComponentName } from './registry';
 import { SETTINGS_FIELDS, PAGE_SETTINGS_FIELDS, BUTTONS_FIELDS } from './settings';
 
-export { BUTTONS_FIELDS, choice, pageSurface, SURFACES, type SectionSettings, type Surface } from './settings';
+export { BUTTONS_FIELDS, choice, pageBackground, BACKGROUNDS, type SectionSettings, type Background } from './settings';
 import type { ButtonsField, Choice } from './settings';
 export type { ComponentName };
 
@@ -26,7 +26,7 @@ export function sectionsQuery(enabled: ComponentName[]) {
 
 /**
  * Everything the library needs from a page, to put inside `page { ... }`: its settings
- * (the surface for <body>) and its sections. Same rule as sectionsQuery for `enabled`.
+ * (the background for <body>) and its sections. Same rule as sectionsQuery for `enabled`.
  */
 export function pageQuery(enabled: ComponentName[]) {
   return `${PAGE_SETTINGS_FIELDS} ${sectionsQuery(enabled)}`;

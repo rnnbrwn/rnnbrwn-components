@@ -6,7 +6,7 @@
 //
 // The heading is the page's <h1> when the Hero is the page's first section (`main`), otherwise
 // an <h2>. A background photo is decoration (empty alt) unless the editor turns on "Describe the
-// photo to screen readers"; it's tinted with the surface colour (--tint-strength) so the text
+// photo to screen readers"; it's tinted with the background colour (--tint-strength) so the text
 // stays readable over any photo, and it fills the section like a panel (or edge to edge at full
 // width) without changing the layout.
 import Section from '../Section.astro';
@@ -133,7 +133,7 @@ const sizes = sectionWidth(section) === 'full' ? '100vw' : laneSizes(section);
       object-fit: cover;
     }
 
-    // The tint: the surface's own colour over the photo, strong enough for its text.
+    // The tint: the background's own colour over the photo, strong enough for its text.
     &::after {
       content: '';
       position: absolute;

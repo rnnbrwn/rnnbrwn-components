@@ -113,7 +113,7 @@ await p.close();
 p = await browser.newPage();
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
-await p.evaluate(() => document.querySelector('[data-preview="surface"][data-value="dark"]').click());
+await p.evaluate(() => document.querySelector('[data-preview="background"][data-value="black"]').click());
 await p.click('.site-nav__toggle'); await wait(400);
 await axe(p, 'phone, menu open, dark page');
 await p.screenshot({ path: SHOTS + '/fs-open-dark.png' });

@@ -14,7 +14,7 @@ const lanes = ['narrow', 'content', 'wide', 'full'];
   <Toolbar />
 
   <main class="l-page">
-    <section data-width="full" data-inner="content" class="surface-subtle">
+    <section data-width="full" data-inner="content" class="bg-surface">
       <div class="l-stack">
         <h1>Layout system demo</h1>
         <p class="demo-lead">
@@ -98,7 +98,7 @@ const lanes = ['narrow', 'content', 'wide', 'full'];
       <DemoCards count={4} />
     </div>
 
-    <section data-width="full" data-inner="narrow" data-space="l" class="surface-accent">
+    <section data-width="full" data-inner="narrow" data-space="l" class="bg-brand">
       <div class="l-stack">
         <h2>A full-width band</h2>
         <p>
@@ -263,7 +263,7 @@ const lanes = ['narrow', 'content', 'wide', 'full'];
   .demo-space__bar {
     display: block;
     height: 1.25rem;
-    background: var(--color-accent);
+    background: var(--color-primary);
     border-radius: var(--radius-s);
   }
 
@@ -292,14 +292,14 @@ const lanes = ['narrow', 'content', 'wide', 'full'];
     display: inline-block;
     padding: var(--space-xs) var(--space-m);
     border-radius: var(--radius-s);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
     text-decoration: none;
     font-weight: 600;
 
     &--ghost {
       background: transparent;
-      color: var(--color-accent);
+      color: var(--color-primary);
       border: 1px solid currentColor;
     }
   }

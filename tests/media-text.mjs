@@ -1,4 +1,4 @@
-import { BASE, SHOTS, SURFACES, BRANDS, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/media-text/';
 const p = await newPage();
 
@@ -26,7 +26,7 @@ const near = (a, b, tol = 1.5) => Math.abs(a - b) <= tol;
 for (const w of [375, 800, 1440]) {
   await p.setViewport({ width: w, height: 900 });
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(200);
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(200);
   // Lazy images: bring each into view so it loads before measuring its natural shape.
   await p.evaluate(async () => { for (const i of document.querySelectorAll('.media-text img')) { i.loading = 'eager'; await i.decode().catch(() => {}); } });
   check(`${w}px: no horizontal scrolling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
@@ -56,12 +56,12 @@ for (const w of [375, 800, 1440]) {
   check(`${w}px: every image has its chosen shape`, shapeWrong.length === 0, shapeWrong.join('; '));
 
   const moved = [];
-  for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((s) => ['brand', s])]) {
+  for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((s) => ['theme', s])]) {
     await pick(p, kind, v); await wait(150);
     if (key(await sections()) !== key(base)) moved.push(v);
   }
-  check(`${w}px: images and text keep their size and position on every page surface and brand`, moved.length === 0, moved.join(', '));
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  check(`${w}px: images and text keep their size and position on every page background and theme`, moved.length === 0, moved.join(', '));
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
   const clip = await p.evaluate(() => { const s = document.querySelectorAll('.media-text'); const top = s[0].getBoundingClientRect().top + scrollY - 10; return { top, height: s[3].getBoundingClientRect().bottom - s[0].getBoundingClientRect().top + 20 }; });
   await p.screenshot({ path: `${SHOTS}/media-text-${w}.png`, clip: { x: 0, y: clip.top, width: w, height: Math.min(clip.height, 4000) } });
 }
@@ -71,11 +71,11 @@ const pos = { center: '50% 50%', top: '50% 0%', bottom: '50% 100%', left: '0% 50
 const focusWrong = (await sections()).filter((s) => s.shape !== 'original' && s.position !== pos[s.focus]).map((s) => `${s.name}: ${s.position}`);
 check('"Keep in view" sets the crop point', focusWrong.length === 0, focusWrong.join('; '));
 
-// Contrast: all the text and links against the section's colour, every page surface × brand.
+// Contrast: all the text and links against the section's colour, every page background × theme.
 let worst = 99, worstWhere = '';
-for (const brand of BRANDS) {
-  for (const surface of SURFACES) {
-    await pick(p, 'brand', brand); await pick(p, 'surface', surface); await wait(120);
+for (const theme of THEMES) {
+  for (const bg of BACKGROUNDS) {
+    await pick(p, 'theme', theme); await pick(p, 'background', bg); await wait(120);
     const r = await p.evaluate(() => {
       const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
@@ -87,11 +87,11 @@ for (const brand of BRANDS) {
       }
       return { min, where };
     });
-    if (r.min < worst) { worst = r.min; worstWhere = `${r.where}, ${surface} page, ${brand || 'library default'} brand`; }
+    if (r.min < worst) { worst = r.min; worstWhere = `${r.where}, ${bg} page, ${theme || 'library default'} theme`; }
   }
 }
-check('text and link contrast ≥ 4.5:1 on every surface × brand', worst >= 4.5, `lowest ${worst.toFixed(2)}:1: ${worstWhere}`);
-await pick(p, 'surface', 'light'); await pick(p, 'brand', '');
+check('text and link contrast ≥ 4.5:1 on every background × theme', worst >= 4.5, `lowest ${worst.toFixed(2)}:1: ${worstWhere}`);
+await pick(p, 'background', 'white'); await pick(p, 'theme', '');
 
 // Structure: h2 headings, text before the image in the page, eyebrow above the heading,
 // every image with an alt attribute, links made into site links. (Reloaded: the loop above
@@ -121,11 +121,11 @@ const noJs = await nojs.evaluate(() => document.querySelectorAll('.media-text im
 check('without JavaScript every section and image is there', noJs === withJs && withJs > 0, `${noJs}/${withJs}`);
 await nojs.close();
 
-// Accessibility, on a light and a dark page.
-for (const surface of ['light', 'dark']) {
+// Accessibility, on a white and a black page.
+for (const bg of ['white', 'black']) {
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', surface); await wait(150);
-  await axeCheck(p, `axe scan of all Media Text sections (${surface} page)`, '.media-text');
+  await pick(p, 'background', bg); await wait(150);
+  await axeCheck(p, `axe scan of all Media Text sections (${bg} page)`, '.media-text');
 }
 
 await finish();

@@ -1,0 +1,169 @@
+// Backgrounds: the five colour schemes every site has, built from its palette.
+//   bg-white    white background, black text (the default)
+//   bg-surface  the soft, tinted background
+//   bg-brand    the site's main colour
+//   bg-accent   the highlight colour
+//   bg-black    reversed out
+//
+// Put a background class on <body> to set the whole site's theme (e.g. <body class="bg-black">
+// for a dark site), on a section (the ACF Background setting does this), or on any element.
+// Each one redefines the colour roles for everything inside it, so components only ever
+// use the roles and work on any background:
+//   --color-bg, --color-text       the background and its text
+//   --color-primary, --color-hover links and buttons, and focus outlines; --color-on-primary is button text
+//   --color-brand                  details in the main colour (eyebrows, the current nav item)
+//   --color-accent                 highlights
+@use 'sass:list';
+@use '../tools' as *;
+
+$backgrounds: ('white', 'surface', 'brand', 'accent', 'black');
+
+// Selectors: every background class, and every background class but one.
+@function classes($except: null) {
+  $list: ();
+  @each $bg in $backgrounds {
+    @if $bg != $except {
+      $list: list.append($list, '.bg-#{$bg}', $separator: comma);
+    }
+  }
+  @return $list;
+}
+
+// What most backgrounds share; each background below changes only what differs. Declared on
+// every background (not left to inherit), so a background inside another (a White panel on a
+// Black page) gets its own values back.
+//   --muted-strength  how much of the text colour muted text keeps
+//   --tint-strength   how much of the background colour covers a photo that has text on it
+//                     (e.g. a Hero's background image), so the text stays readable over any photo
+//   --color-shadow, --shadow-strength  the colour and strength of --shadow-raised
+:root,
+#{classes()} {
+  --color-text: var(--palette-black);
+  --color-primary: var(--palette-primary);
+  --color-hover: var(--palette-hover);
+  --color-on-primary: var(--palette-on-primary);
+  --color-brand: var(--palette-brand);
+  --color-accent: var(--palette-accent);
+  --muted-strength: 70%;
+  --tint-strength: 80%;
+  --color-shadow: var(--palette-black);
+  --shadow-strength: 1;
+}
+
+:root,
+.bg-white {
+  --color-bg: var(--palette-white);
+}
+
+.bg-surface {
+  --color-bg: var(--palette-surface);
+}
+
+// On a colour, everything is drawn in its text colour (white or black, whichever the site
+// set): buttons reverse to that colour with the background's colour as their text. Even the
+// full text colour may only just pass the 4.5:1 contrast minimum on a mid-tone colour, so
+// nothing is dimmed or blended here: muted text is the full text colour (labels rely on size
+// and weight instead), hover keeps the same colour (buttons still lift, links thicken their
+// underline), and photos behind text are tinted more strongly.
+@each $colour in ('brand', 'accent') {
+  .bg-#{$colour} {
+    --color-bg: var(--palette-#{$colour});
+    --color-text: var(--palette-on-#{$colour});
+    --color-primary: var(--palette-on-#{$colour});
+    --color-hover: var(--palette-on-#{$colour});
+    --color-on-primary: var(--palette-#{$colour});
+    --color-brand: var(--palette-on-#{$colour});
+    --color-accent: var(--palette-on-#{$colour});
+    --muted-strength: 100%;
+    --tint-strength: 90%;
+  }
+}
+
+.bg-black {
+  --color-bg: var(--palette-black);
+  --color-text: var(--palette-white);
+  --color-primary: var(--palette-primary-on-black);
+  --color-hover: var(--palette-hover-on-black);
+  --color-on-primary: var(--palette-on-primary-on-black);
+  --color-brand: var(--palette-brand-on-black);
+  --color-accent: var(--palette-accent-on-black);
+  // Shadows on Black are a much deeper version of the black colour, and stronger, so they
+  // still show against it.
+  --color-shadow: color-mix(in oklab, var(--palette-black) 25%, black);
+  --shadow-strength: 2.5;
+  color-scheme: dark; // dark scrollbars and form controls
+}
+
+// Whether a background is light or dark, for things that can't recolour themselves, like
+// images. `display: var(--display-if-dark)` shows an element only on dark backgrounds. Brand
+// counts as dark and Accent as light (matching the default white text on Brand and black text
+// on Accent); a site that changes those text colours changes these too:
+//   .bg-brand { --display-if-light: block; --display-if-dark: none; }
+:root,
+.bg-white,
+.bg-surface,
+.bg-accent {
+  --display-if-light: block;
+  --display-if-dark: none;
+}
+.bg-brand,
+.bg-black {
+  --display-if-light: none;
+  --display-if-dark: block;
+}
+
+// Roles worked out from the ones above. They're declared on every background (not just
+// :root) so they're recalculated inside each one.
+:root,
+#{classes()} {
+  --color-muted: color-mix(in oklab, var(--color-text) var(--muted-strength), var(--color-bg));
+  --color-border: color-mix(in oklab, var(--color-text) 18%, var(--color-bg));
+  --color-card: color-mix(in oklab, var(--color-text) 6%, var(--color-bg));
+  // A soft shadow that lifts something slightly (e.g. a button on hover), in --color-shadow:
+  // the palette's black, or a deeper, stronger (--shadow-strength) version on the Black background.
+  --shadow-raised:
+    0 0.0625rem 0.125rem color-mix(in oklab, var(--color-shadow) calc(20% * var(--shadow-strength)), transparent),
+    0 0.375rem 1rem -0.25rem color-mix(in oklab, var(--color-shadow) min(100%, calc(35% * var(--shadow-strength))), transparent);
+}
+
+#{classes()} {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+// The page's own background is whatever is on <body> (white if nothing is). Paint the area
+// around the page to match, so overscrolling doesn't reveal a light edge on a dark site.
+@each $bg in $backgrounds {
+  :root:has(> body.bg-#{$bg}) {
+    background-color: var(--palette-#{$bg});
+  }
+}
+
+// The page's background, as a selector: body.bg-black, or for white, a body with no other background.
+@function page($bg) {
+  @if $bg == 'white' {
+    @return 'body:not(#{classes($except: 'white')})';
+  }
+  @return 'body.bg-#{$bg}';
+}
+
+// A section on a different background from the page, and not full width, becomes a panel: a
+// rounded block of its colour. A section on the same background as the page just blends in.
+//
+// The panel is only painted, never laid out: its colour is drawn by ::before, behind the
+// section, so changing a section's background never moves or resizes anything. It covers the
+// panel area (tools/_panel.scss): out into the gutter, so the content keeps exactly its lane
+// width, and pulled in slightly top and bottom, leaving a gap between two panels in a row.
+@each $page in $backgrounds {
+  #{page($page)} .l-page > :is(#{classes($except: $page)}):not([data-width='full']) {
+    position: relative;
+    isolation: isolate;
+    background-color: transparent;
+
+    &::before {
+      content: '';
+      @include panel-area;
+      background-color: var(--color-bg);
+    }
+  }
+}

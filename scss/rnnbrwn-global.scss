@@ -1,7 +1,7 @@
 // Outputs the site-wide CSS once: tokens, base styles and layout classes.
 // A site's global stylesheet starts with:  @use 'rnnbrwn-global';
 @use 'tools' as *;
-@use 'base/surfaces';
+@use 'base/backgrounds';
 @use 'base/base';
 @use 'base/prose';
 @use 'base/text';

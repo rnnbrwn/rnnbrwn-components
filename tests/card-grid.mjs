@@ -1,4 +1,4 @@
-import { BASE, SHOTS, SURFACES, BRANDS, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/card-grid/';
 const p = await newPage();
 
@@ -37,13 +37,13 @@ const grids = () => p.evaluate(() => [...document.querySelectorAll('.card-grid')
 }));
 
 // Expected columns at 1440px for each grid (by its seed heading), and at 375px always 1.
-const WIDE = { '4 cards in 3 columns': 3, '5 cards in 3 columns': 3, '6 cards in 4 columns': 4, 'row is already full': 3, '3 columns, Panel': 3, '3 columns, Plain': 3, '2 columns, narrow': 2, '4 columns, wide': 4, '4 columns, Plain, full': 4, '4 columns, Panel, on Dark': 4, 'Text only': 3, 'one card': 1, 'wide content': 4 };
+const WIDE = { '4 cards in 3 columns': 3, '5 cards in 3 columns': 3, '6 cards in 4 columns': 4, 'row is already full': 3, '3 columns, Panel': 3, '3 columns, Plain': 3, '2 columns, narrow': 2, '4 columns, wide': 4, '4 columns, Plain, full': 4, '4 columns, Panel, on Black': 4, 'Text only': 3, 'one card': 1, 'wide content': 4 };
 const expectAt1440 = (name) => Object.entries(WIDE).find(([k]) => name.includes(k))?.[1];
 
 for (const w of [375, 800, 1440]) {
   await p.setViewport({ width: w, height: 900 });
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(200);
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(200);
   check(`${w}px: no horizontal scrolling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
   const base = await grids();
   info(`${w}px columns: ${base.map((g) => `${g.name.replace('Card Grid: ', '').slice(0, 22)}=${g.columns}`).join(', ')}`);
@@ -68,24 +68,24 @@ for (const w of [375, 800, 1440]) {
   const badRatio = base.flatMap((g) => g.ratios.slice(0, g.fill ? -1 : undefined)).filter((r) => Math.abs(r - 1.5) > 0.02);
   check(`${w}px: every card image is cropped to 3:2`, badRatio.length === 0, badRatio.map((r) => r.toFixed(2)).join(', '));
   let moved = [];
-  for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((s) => ['brand', s])]) {
+  for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((s) => ['theme', s])]) {
     await pick(p, kind, v); await wait(150);
     (await grids()).forEach((g, i) => { if (g.boxes !== base[i].boxes) moved.push(`${g.name} on ${v}`); });
   }
-  check(`${w}px: every card keeps its size and position on every page surface and brand`, moved.length === 0, moved.slice(0, 3).join('; '));
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  check(`${w}px: every card keeps its size and position on every page background and theme`, moved.length === 0, moved.slice(0, 3).join('; '));
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
   const top = await p.evaluate(() => document.querySelector('.card-grid').getBoundingClientRect().top + scrollY - 10);
   const height = await p.evaluate(() => { const g = document.querySelectorAll('.card-grid'); return g[1].getBoundingClientRect().bottom - g[0].getBoundingClientRect().top + 20; });
   await p.screenshot({ path: `${SHOTS}/card-grid-${w}.png`, clip: { x: 0, y: top, width: w, height: Math.min(height, 4000) } });
 }
 
 // Contrast: every card text against what's actually behind it (the card fill for Panel, the
-// section's colour for Plain), on every page surface × brand.
+// section's colour for Plain), on every page background × theme.
 await p.setViewport({ width: 1440, height: 900 });
 let worst = 99, worstWhere = '';
-for (const brand of BRANDS) {
-  for (const surface of SURFACES) {
-    await pick(p, 'brand', brand); await pick(p, 'surface', surface); await wait(120);
+for (const theme of THEMES) {
+  for (const bg of BACKGROUNDS) {
+    await pick(p, 'theme', theme); await pick(p, 'background', bg); await wait(120);
     const r = await p.evaluate(() => {
       const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
@@ -107,11 +107,11 @@ for (const brand of BRANDS) {
       }
       return { min, where };
     });
-    if (r.min < worst) { worst = r.min; worstWhere = `${r.where}, ${surface} page, ${brand || 'library default'} brand`; }
+    if (r.min < worst) { worst = r.min; worstWhere = `${r.where}, ${bg} page, ${theme || 'library default'} theme`; }
   }
 }
-check('card and section text contrast (incl. eyebrows) ≥ 4.5:1 on every surface × brand', worst >= 4.5, `lowest ${worst.toFixed(2)}:1: ${worstWhere}`);
-await pick(p, 'surface', 'light'); await pick(p, 'brand', '');
+check('card and section text contrast (incl. eyebrows) ≥ 4.5:1 on every background × theme', worst >= 4.5, `lowest ${worst.toFixed(2)}:1: ${worstWhere}`);
+await pick(p, 'background', 'white'); await pick(p, 'theme', '');
 
 // Links: one per linked card, named by its heading, stretched over the whole card.
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
@@ -181,12 +181,12 @@ const noJsCards = await nojs.evaluate(() => document.querySelectorAll('.card').l
 check('without JavaScript every card is there', noJsCards === withJs && withJs > 0, `${noJsCards}/${withJs}`);
 await nojs.close();
 
-// Accessibility, on a light and a dark page.
-for (const surface of ['light', 'dark']) {
+// Accessibility, on a white and a black page.
+for (const bg of ['white', 'black']) {
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', surface); await wait(150);
-  await axeCheck(p, `axe scan of all Card Grids (${surface} page)`, '.card-grid');
+  await pick(p, 'background', bg); await wait(150);
+  await axeCheck(p, `axe scan of all Card Grids (${bg} page)`, '.card-grid');
 }
-await pick(p, 'surface', 'light');
+await pick(p, 'background', 'white');
 
 await finish();

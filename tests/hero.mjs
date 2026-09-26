@@ -1,4 +1,4 @@
-import { BASE, SHOTS, SURFACES, BRANDS, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/hero/';
 const p = await newPage();
 
@@ -11,19 +11,19 @@ const geometry = () => p.evaluate(() => [...document.querySelectorAll('.hero')].
 for (const w of [375, 800, 1440]) {
   await p.setViewport({ width: w, height: 900 });
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', '');
+  await pick(p, 'background', 'white'); await pick(p, 'theme', '');
   await wait(200);
   const hscroll = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   check(`${w}px: no horizontal scrolling`, !hscroll);
   const base = await geometry();
   let moved = [];
-  for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((s) => ['brand', s])]) {
+  for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((s) => ['theme', s])]) {
     await pick(p, kind, v); await wait(150);
     const g = await geometry();
     g.forEach((x, i) => { if (x.content !== base[i].content || x.media !== base[i].media) moved.push(`${x.name} on ${v}`); });
   }
-  check(`${w}px: every Hero keeps its size and position on every page surface and brand`, moved.length === 0, moved.slice(0, 3).join('; '));
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  check(`${w}px: every Hero keeps its size and position on every page background and theme`, moved.length === 0, moved.slice(0, 3).join('; '));
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
   // media stays inside the screen and covers the section
   const media = await p.evaluate(() => [...document.querySelectorAll('.hero--photo')].map((h) => {
     const m = h.querySelector('.hero__media').getBoundingClientRect(), s = h.getBoundingClientRect(), full = h.dataset.width === 'full';
@@ -42,8 +42,8 @@ for (const w of [375, 800, 1440]) {
 // Worst-case contrast of text over photos: the tint over each extreme of the test photo.
 await p.setViewport({ width: 1440, height: 900 });
 const extremes = ['#ffffff', '#000000', '#e50053', '#fece00', '#3b5bdb'];
-for (const brand of BRANDS) {
-  await pick(p, 'brand', brand); await pick(p, 'surface', 'light'); await wait(200);
+for (const theme of THEMES) {
+  await pick(p, 'theme', theme); await pick(p, 'background', 'white'); await wait(200);
   const rows = await p.evaluate((extremes) => {
     const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
     const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
@@ -62,17 +62,17 @@ for (const brand of BRANDS) {
       return `${h.querySelector('.hero__heading').textContent.slice(24).padEnd(32)} worst ${worst.toFixed(1)}:1  [${Object.entries(per).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(', ')}]`;
     });
   }, extremes);
-  info(`photo contrast, ${brand || 'library default'} brand:`);
+  info(`photo contrast, ${theme || 'library default'} theme:`);
   rows.forEach((r) => info(`  ${r}`));
 }
-await pick(p, 'brand', '');
+await pick(p, 'theme', '');
 
 // Accessibility
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await axeCheck(p, 'axe scan of all Heroes', '.hero');
 const alts = await p.evaluate(() => [...document.querySelectorAll('.hero__media img')].map((i) => `${i.closest('.hero').querySelector('.hero__heading').textContent.slice(6, 40)}: alt="${i.alt}"`));
 // Decorative photos must have alt=""; the described one uses the Media Library's alt text (the real test photo may have none).
-const decorativeOk = alts.filter((a) => !a.includes('on Accent')).every((a) => a.endsWith('alt=""'));
+const decorativeOk = alts.filter((a) => !a.includes('image on Brand')).every((a) => a.endsWith('alt=""'));
 check('photos are decorative unless "Describe the photo" is on', decorativeOk, alts.join(' | '));
 const newTab = await p.evaluate(() => { const a = [...document.querySelectorAll('.hero .button')].find((x) => x.target === '_blank'); return a && a.rel.includes('noopener') && a.textContent.includes('(opens in a new tab)'); });
 check('a new-tab button says so and has rel=noopener', newTab);

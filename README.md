@@ -44,24 +44,24 @@ Footer's links come from two **WordPress menus** (Appearance → Menus). In the 
 ```
 
 ### Buttons
-Buttons are one component used everywhere: any component that shows buttons includes the same fields, so they look and behave the same on every site. Each button is a link (pick a page or type an address; the link text is the label) and a **Style**: **Solid** (the main action), **Outline**, or **Text link** (a plain link, for low-key actions). Up to three per component; they wrap onto new lines when space runs out. Arrows are automatic: a text link gets →, and a link to another website or one that opens in a new tab gets ↗ (new tabs are also announced to screen readers). Every style is at least 44px tall. Solid and Outline are never underlined: on hover their fill shifts slightly and they lift with a soft shadow (`--shadow-raised`, in `--color-shadow`: the brand's Dark colour, or on the Dark surface a much deeper version at 2.5× strength, `--shadow-strength`); a Text link stays underlined.
+Buttons are one component used everywhere: any component that shows buttons includes the same fields, so they look and behave the same on every site. Each button is a link (pick a page or type an address; the link text is the label) and a **Style**: **Solid** (the main action), **Outline**, or **Text link** (a plain link, for low-key actions). Up to three per component; they wrap onto new lines when space runs out. Arrows are automatic: a text link gets →, and a link to another website or one that opens in a new tab gets ↗ (new tabs are also announced to screen readers). Every style is at least 44px tall. Solid and Outline are never underlined: on hover their fill changes to the hover colour and they lift with a soft shadow (`--shadow-raised`, in `--color-shadow`: the palette's black, or on the Black background a much deeper version at 2.5× strength, `--shadow-strength`); a Text link stays underlined.
 
 To give a component buttons:
 - **WordPress:** add `rs_buttons( '<layout>' )` to its fields. It makes a repeater called `<layout>_buttons` (e.g. `hero_buttons`).
 - **Astro:** fetch it with `BUTTONS_FIELDS` (e.g. `` `heroButtons ${BUTTONS_FIELDS}` `` in the registry) and render it with `<ButtonRow buttons={section.heroButtons} cmsUrl={cmsUrl} align="left" />`. `Button.astro` renders a single one. Both are exported for a site's own pages (`@rnnbrwn/components/ButtonRow.astro`).
-- **Styles:** `.button`, `.button--outline`, `.button--text` in `scss/base/_buttons.scss`. Never write new button styles in a component. Over a photo, make text links use `--color-text` (the accent isn't readable enough there; see Hero).
+- **Styles:** `.button`, `.button--outline`, `.button--text` in `scss/base/_buttons.scss`. Never write new button styles in a component. Over a photo, make text links use `--color-text` (the primary colour isn't readable enough there; see Hero).
 
 `<Sections>` tells the first section it's the page's main heading (`main`); pass `mainHeading={false}` on a page that already has an `<h1>`.
 
-Photos behind text are tinted with the section's colour at `--tint-strength` (80%, Accent 90%), chosen so text passes 4.5:1 even over pure white or black. With a mid-tone accent (e.g. white on pink at 4.6:1), Accent over a photo can still fall just short: prefer Light, Subtle or Dark over photos for such brands.
+Photos behind text are tinted with the section's colour at `--tint-strength` (80%, Brand and Accent 90%), chosen so text passes 4.5:1 even over pure white or black. With a mid-tone brand colour (e.g. white on pink at 4.6:1), Brand over a photo can still fall just short: prefer White, Surface or Black over photos for such palettes.
 
 Anything else rendered from a WordPress link field uses `linkTarget(link, cmsUrl, Astro.site)` from `src/html.ts` (the site address, new tab, other website, and `attrs` to spread on the `<a>`) with `<NewTabNote show={newTab} />` inside the link, as Button, Card Grid and Navigation do, so links behave the same everywhere.
 
 ### Shared pieces
 Reuse these rather than writing a component's own version:
 - **Images:** `IMAGE_FIELDS` in the registry and `<Image image={...} sizes={...} />` (`src/Image.astro`: srcset, width and height, lazy unless `eager`, Media Library alt text unless `alt` is given). `laneSizes(section, share)` in `src/settings.ts` works out `sizes` from the section's lane. A "Keep in view" setting is `data-focus` on the image's wrapper (styled in `scss/base/_base.scss`).
-- **Eyebrows:** `class="eyebrow <component>__eyebrow"` (`scss/base/_text.scss`); change size or colour with the component's own class.
-- **Field shapes:** `WpLink`, `WpImage`, `ButtonsField`, `Choice` and `LINK_FIELDS` in `src/settings.ts`; `sectionWidth()`, `contentLane()` and `surfaceClass()` for the Settings tab.
+- **Eyebrows:** `class="eyebrow <component>__eyebrow"` (`scss/base/_text.scss`); they're in the brand colour (`--color-brand`); change size or colour with the component's own class (card eyebrows are smaller and muted).
+- **Field shapes:** `WpLink`, `WpImage`, `ButtonsField`, `Choice` and `LINK_FIELDS` in `src/settings.ts`; `sectionWidth()`, `contentLane()` and `backgroundClass()` for the Settings tab.
 - **Arrows:** `<ButtonIcon style newTab external />`, the same automatic → and ↗ as Button.
 - **Panels:** `@include panel-area;` (`scss/tools/_panel.scss`) for anything painted like a section panel (Hero's photo uses it).
 - **WordPress fields:** `rs_eyebrow`, `rs_textarea`, `rs_image`, `rs_select` (with an `$extra` array for instructions and conditions), `rs_when` for conditional logic and `rs_background` in `sections.php`.
@@ -74,76 +74,94 @@ rnnbrwn.xyz/components/example-site/ is a realistic page built from the componen
 ## Using it in a site
 1. Install: `npm install github:rnnbrwn/rnnbrwn-components#<version>` (while developing: `npm install ../../platform/rnnbrwn-components`, which links the local folder).
 2. `astro.config.mjs`: `import rnnbrwnComponents from '@rnnbrwn/components';` and add `rnnbrwnComponents()` to `integrations`.
-3. Global stylesheet: `@use 'rnnbrwn-global';` then set the site's brand colours (see below).
-4. WordPress (child theme `functions.php`): `add_filter('rnnbrwn_sections', fn () => ['components' => [...], 'pages' => 'all', 'surface' => 'light']);`
+3. Global stylesheet: `@use 'rnnbrwn-global';` then set the site's palette (see below).
+4. WordPress (child theme `functions.php`): `add_filter('rnnbrwn_sections', fn () => ['components' => [...], 'pages' => 'all', 'background' => 'white']);`
 5. Query and render, listing the same components as step 4:
    ```astro
    ---
    import Sections from '@rnnbrwn/components/Sections.astro';
-   import { pageQuery, pageSurface } from '@rnnbrwn/components/graphql';
+   import { pageQuery, pageBackground } from '@rnnbrwn/components/graphql';
    const data = await query(`{ page(id: "/about/", idType: URI) { ${pageQuery(['hero'])} } }`);
    ---
-   <body class={`surface-${pageSurface(data.page)}`}>
+   <body class={`bg-${pageBackground(data.page)}`}>
      <main class="l-page"><Sections sections={data.page.pageSections.sections} cmsUrl={import.meta.env.GRAPHQL_URL} /></main>
    </body>
    ```
 
-## Colours: four surfaces on every site, each site's own brand colours
-There are four **surfaces** (colour schemes), the same on every site: `surface-light`, `surface-subtle`, `surface-accent` and `surface-dark`. A site only sets its brand colours; the library builds the surfaces from them:
+## Colours: five backgrounds on every site, each site's own palette
+Every site has a **palette** of seven colours: an off-white and an off-black (never pure `#fff` or `#000`) and five colours. A site only sets its palette; the library builds everything else from it:
 
 ```scss
 @use 'rnnbrwn-global';
 
 :root {
-  --brand-light: #fffcff;      // the Light surface, and text on Dark
-  --brand-subtle: #fece00;     // the Subtle surface
-  --brand-dark: #292f36;       // text on Light, and the Dark surface
-  --brand-accent: #e50053;     // the Accent surface, links and buttons
-  --brand-on-accent: #fffcff;  // text on the accent colour
-  // Optional: the accent on the Dark surface. By default it's a lighter tint of the
-  // accent (60% accent, 40% light) with dark text on buttons, so links stay readable.
-  // --brand-accent-on-dark: #ff5c93;
-  // --brand-on-accent-on-dark: #292f36;
+  --palette-white: #fffcff;    // the White background, and text on dark colours
+  --palette-black: #292f36;    // body text, and the Black background
+  --palette-surface: #fdf3c4;  // the soft, tinted Surface background
+  --palette-brand: #e50053;    // the site's main colour: the Brand background, eyebrows, the current nav item, quote rules
+  --palette-primary: #c70049;  // buttons, links and focus outlines
+  --palette-hover: #99003a;    // buttons and links on hover
+  --palette-accent: #fece00;   // highlights (--color-accent), and the Accent background
+
+  // Which neutral goes on each colour. These are the defaults; use black for a pale colour.
+  // --palette-on-brand: var(--palette-white);
+  // --palette-on-primary: var(--palette-white);
+  // --palette-on-accent: var(--palette-black);
+
+  // Optional: the colours on the Black background. By default brand, primary and hover are
+  // lighter tints (60% colour, 40% white; hover 40/60), with black text on buttons, so they
+  // stay readable. Set them yourself for a very dark or very light colour.
+  // --palette-brand-on-black: #ff5c93;
+  // --palette-primary-on-black: #ff5c93;
+  // --palette-hover-on-black: #ff8fb3;
+  // --palette-on-primary-on-black: var(--palette-black);
+  // --palette-accent-on-black: var(--palette-accent);
 }
 ```
 
-**The page's surface** is set per page in WordPress, in the **Page settings** box in the edit screen's sidebar. It defaults to the site's usual surface (`'surface'` in the site's `rnnbrwn_sections` filter). The frontend puts it on `<body>`:
+There are five **backgrounds** (colour schemes), the same on every site and in every Background dropdown in WordPress: **White** (`bg-white`, the default), **Surface** (`bg-surface`), **Brand** (`bg-brand`), **Accent** (`bg-accent`) and **Black** (`bg-black`). Primary and hover are for buttons and links only, never a whole background.
+
+**The page's background** is set per page in WordPress, in the **Page settings** box in the edit screen's sidebar. It defaults to the site's usual background (`'background'` in the site's `rnnbrwn_sections` filter). The frontend puts it on `<body>`:
 
 ```astro
 ---
-import { pageQuery, pageSurface } from '@rnnbrwn/components/graphql';
+import { pageQuery, pageBackground } from '@rnnbrwn/components/graphql';
 const { page } = await query(`{ page(id: "/about/", idType: URI) { ${pageQuery(['rich_text'])} } }`);
 ---
-<body class={`surface-${pageSurface(page)}`}>
+<body class={`bg-${pageBackground(page)}`}>
 ```
 
-**A section's surface** is its **Background** setting. The default, **Same as the page**, follows the page, so changing a page's surface changes every section left on the default. Picking one of the four colours makes the section a panel, unless it matches the page or the section is full width. A panel is only painted behind the section (reaching out into the gutter, and pulled in slightly top and bottom so two panels in a row have a gap), so changing a section's background never moves or resizes anything. Any other element can take a surface class too.
+**A section's background** is its **Background** setting. The default, **Same as the page**, follows the page, so changing a page's background changes every section left on the default. Picking one of the five makes the section a panel, unless it matches the page or the section is full width. A panel is only painted behind the section (reaching out into the gutter, and pulled in slightly top and bottom so two panels in a row have a gap), so changing a section's background never moves or resizes anything. Any other element can take a background class too.
 
-Muted text is the text colour blended 70% into the background, except on **Accent**, where it's the full text colour: a mid-tone accent leaves no room for dimmer text at the 4.5:1 contrast minimum.
+On **Brand** and **Accent**, everything is drawn in that background's text colour: links, eyebrows and muted text are the full text colour, and Solid buttons reverse (the text colour as the fill, the background's colour as the label). Hover doesn't change colour there (buttons still lift, links thicken their underline): a mid-tone colour leaves no room for a second shade at the 4.5:1 contrast minimum. Elsewhere, muted text is the text colour blended 70% into the background.
 
-**Components never use `--brand-*`.** They use the colour **roles**, which every surface redefines for everything inside it, so a component works on any surface without knowing which one it's on: `--color-bg`, `--color-text`, `--color-muted`, `--color-border`, `--color-card` (cards, inputs), `--color-accent` and `--color-on-accent` (buttons). Muted, border and card are mixed from text and background automatically. Each site has to pick brand colours with enough contrast: check them with the test page's preview switches.
+Brand counts as a dark background and Accent as a light one (for `--display-if-dark`/`--display-if-light`, e.g. which logo shows), matching the default text colours on them. A site that changes `--palette-on-brand` or `--palette-on-accent` changes that too: `.bg-brand { --display-if-light: block; --display-if-dark: none; }`.
+
+**Components never use `--palette-*`.** They use the colour **roles**, which every background redefines for everything inside it, so a component works on any background without knowing which one it's on: `--color-bg`, `--color-text`, `--color-muted`, `--color-border`, `--color-card` (cards, inputs), `--color-primary`, `--color-hover` and `--color-on-primary` (links and buttons), `--color-brand` (details in the main colour) and `--color-accent` (highlights). Muted, border and card are mixed from text and background automatically. Each site has to pick a palette with enough contrast: check it with the test page's theme switch and `tests/theme-contrast.mjs`.
+
+**Upgrading from v0.2** (four "surfaces", `--brand-*` colours): `--brand-light`/`-dark`/`-subtle` become `--palette-white`/`-black`/`-surface`; `--brand-accent` becomes both `--palette-brand` and `--palette-primary` (add `--palette-hover` and `--palette-accent`); `--brand-on-accent` becomes `--palette-on-brand` and `--palette-on-primary`. Classes `surface-light|subtle|accent|dark` become `bg-white|surface|brand|black`; `pageSurface`/`SURFACES`/`surfaceClass` become `pageBackground`/`BACKGROUNDS`/`backgroundClass`; the query field `pageSettings { surface }` becomes `pageSettings { background }`; the `rnnbrwn_sections` setting `'surface' => 'light'` becomes `'background' => 'white'`. Then run `migrations/0.3.0-backgrounds.php` once on each site's WordPress (instructions at its top) to move saved Background choices to the new names.
 
 ## Sass structure (`scss/`)
-- `settings/` values only: breakpoints, container sizes, width lanes (plus `$card-min`, the narrowest a grid card may get), type and spacing scales, default brand colours. All `!default`.
+- `settings/` values only: breakpoints, container sizes, width lanes (plus `$card-min`, the narrowest a grid card may get), type and spacing scales, the default palette. All `!default`.
 - `tools/` mixins and functions: `mq()` (and `mq-below()` for small-screen-only rules), `cq()`, `fluid()`, `type-scale()`, `space-scale()`, `snap-leading()` (a line-height on the vertical rhythm grid), token mixins. Outputs no CSS; components use `@use 'tools' as *;`.
-- `base/`, `layout/` global CSS: surfaces and panels, reset and typography, the `.l-page` grid, section spacing, `.l-stack`, `.l-cluster`.
+- `base/`, `layout/` global CSS: backgrounds and panels, reset and typography, the `.l-page` grid, section spacing, `.l-stack`, `.l-cluster`.
 - `rnnbrwn-global.scss` outputs all global CSS and the `:root` custom properties, once per site.
 
 ## Accessibility and motion
-- Keyboard focus always shows an outline (`:focus-visible`, in the surface's accent).
+- Keyboard focus always shows an outline (`:focus-visible`, in the background's primary colour).
 - `.visually-hidden` hides text visually but keeps it for screen readers; `.visually-hidden-focusable` appears on focus (skip links).
 - Tap targets are at least `var(--tap-target)` (44px).
 - Animations use `var(--duration-fast|base)` and `var(--ease-out)`; these become 0 for people who ask for reduced motion, so use them for every transition.
-- Images that can't recolour can be shown per surface with `display: var(--display-if-light)` / `var(--display-if-dark)`.
+- Images that can't recolour can be shown per background with `display: var(--display-if-light)` / `var(--display-if-dark)`.
 
 ## Rules for components
-1. No raw px, hex or rem values: use `var(--space-*)`, `var(--step-*)`, `var(--color-*)` (roles, never `--brand-*`), `var(--radius-*)`, `var(--line)`.
+1. No raw px, hex or rem values: use `var(--space-*)`, `var(--step-*)`, `var(--color-*)` (roles, never `--palette-*`), `var(--radius-*)`, `var(--line)`.
    **Vertical rhythm:** space text in lines of body text, `var(--line)` (24px on phones, 25.5px on desktop), not the spacing scale: a heading half a line from its own text, blocks of text one line apart, a line and a half before a new group (a subheading, or cards after a section header), a quarter line inside a card. Base styles put every heading, paragraph, list item and quote on a quarter-line grid; a component that sets its own line-height uses `@include snap-leading(<number>)`. The `--space-*` scale is for everything else: section spacing, padding, gaps between cards or buttons, side-by-side columns.
-2. Never set your own width. Wrap the component in `<Section section={section}>`, which places it in the lane chosen in WordPress and applies spacing, surface and anchor. A **Full width** section's background runs edge to edge while its content lines up with its **Content width** (Narrow, Content or Wide; a setting that shows only for Full width). For anything sized from the lane (e.g. an image's `sizes`), use `contentLane(section)` and `LANE_REM` from `settings.ts`, never the Width field alone.
+2. Never set your own width. Wrap the component in `<Section section={section}>`, which places it in the lane chosen in WordPress and applies spacing, background and anchor. A **Full width** section's background runs edge to edge while its content lines up with its **Content width** (Narrow, Content or Wide; a setting that shows only for Full width). For anything sized from the lane (e.g. an image's `sizes`), use `contentLane(section)` and `LANE_REM` from `settings.ts`, never the Width field alone.
 3. Page-level layout uses `mq()`; layout inside a component uses `cq()` (the element being measured gets `container-type: inline-size`).
 4. A repeater field needs a name unique across all components (`card_grid_items`, not `items`).
 5. Lay a component out on an inner wrapper, not on the `<Section>` element: a full-width section is a subgrid of the page grid, and a `gap` set on it squeezes the content lane.
-6. On a card fill (`--color-card`), the accent can fall just short of 4.5:1 (4.4:1 with some themes): use `--color-text` for text there, as Card Grid does for "Read more →".
+6. On a card fill (`--color-card`), the primary and brand colours can fall just short of 4.5:1 (4.4:1 with some themes): use `--color-text` or `--color-muted` for text there, as Card Grid does for "Read more →" and card eyebrows.
 
 ## Adding a component
 1. `rnnbrwn-base/sections/components/<name>.php` returning `rs_layout(...)` (see `placeholder.php`).

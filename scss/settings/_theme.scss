@@ -1,13 +1,23 @@
-// Brand colours: the only colours a site sets. The library builds the four surfaces
-// (light, subtle, accent, dark) from them; see base/_surfaces.scss.
+// The palette: the only colours a site sets. Two neutrals and five colours; the library builds
+// the five backgrounds (white, black, surface, brand, accent) from them, see base/_backgrounds.scss.
 // Sites override them as CSS custom properties after @use 'rnnbrwn-global':
-//   :root { --brand-accent: #e50053; --brand-dark: #292f36; }
+//   :root { --palette-brand: #e50053; --palette-black: #292f36; }
 $palette: (
-  light: #ffffff,      // page background, and text on dark
-  subtle: #f3f3f5,     // the subtle background
-  dark: #1d1d1f,       // body text, and the dark background
-  accent: #3b5bdb,     // the accent background, links and buttons
-  on-accent: #ffffff,  // text and buttons on the accent background
+  'white': #fafaf9,    // page background, and text on dark colours (an off-white, never #fff)
+  'black': #1c1c1e,    // body text, and the Black background (an off-black, never #000)
+  surface: #efeff2,    // the soft, tinted background
+  brand: #3451c9,      // the site's main colour: the Brand background, eyebrows, the current nav item, quote rules
+  primary: #364fc7,    // buttons and links (and focus outlines)
+  hover: #283b96,      // buttons and links on hover
+  accent: #f59f00,     // highlights, and the Accent background
+) !default;
+
+// Which neutral goes on top of each colour: white or black. Set them as custom properties too,
+// e.g. :root { --palette-on-brand: var(--palette-black); } for a pale brand colour.
+$palette-on: (
+  on-brand: 'white',   // text on the Brand background
+  on-primary: 'white', // text on buttons
+  on-accent: 'black',  // text on the Accent background
 ) !default;
 
 $radii: (

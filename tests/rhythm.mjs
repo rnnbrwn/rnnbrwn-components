@@ -1,6 +1,6 @@
 // Vertical rhythm: text on a quarter-line grid of --line (scss/base/_base.scss, snap-leading()),
 // and text spaced in lines (editor text in scss/base/_prose.scss; components in their own styles).
-import { BASE, SHOTS, SURFACES, check, info, wait, newPage, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, check, info, wait, newPage, finish } from './lib.mjs';
 const PAGES = ['example-site', 'hero', 'rich-text', 'card-grid', 'media-text'];
 const p = await newPage();
 
@@ -50,12 +50,12 @@ for (const w of [375, 1280]) {
 await p.setViewport({ width: 1280, height: 900 });
 await p.goto(BASE + '/components/example-site/', { waitUntil: 'networkidle0' });
 const heights = [];
-for (const s of SURFACES) {
-  await p.evaluate((s) => { document.body.className = document.body.className.replace(/\bsurface-\S+/g, '').trim() + ` surface-${s}`; }, s);
+for (const s of BACKGROUNDS) {
+  await p.evaluate((s) => { document.body.className = document.body.className.replace(/\bbg-\S+/g, '').trim() + ` bg-${s}`; }, s);
   await wait(100);
   heights.push(await p.evaluate(() => document.documentElement.scrollHeight));
 }
-check('the page is the same height on every page surface', new Set(heights).size === 1, heights.join(', '));
+check('the page is the same height on every page background', new Set(heights).size === 1, heights.join(', '));
 
 info(`screenshots: ${SHOTS}/rhythm-*.png`);
 await finish();

@@ -24,7 +24,7 @@
 // clicking elsewhere and tabbing out; without JavaScript they open on hover and keyboard focus.
 import NewTabNote from './NewTabNote.astro';
 import { linkTarget } from './html';
-import { choice, surfaceClass } from './settings';
+import { choice, backgroundClass } from './settings';
 import type { NavigationData, NavigationMenuItem } from './graphql';
 
 interface Props {
@@ -76,7 +76,7 @@ const items = links.flatMap((item, index) => {
 });
 ---
 
-<header class:list={['site-nav', surfaceClass(choice(nav?.background, 'page'))]} data-site-nav>
+<header class:list={['site-nav', backgroundClass(choice(nav?.background, 'page'))]} data-site-nav>
   {/* Runs straight away, before the links are drawn, so they never flash open while the page loads. */}
   <script is:inline>document.currentScript.parentElement.setAttribute('data-enhanced', '');</script>
 
@@ -302,8 +302,8 @@ const items = links.flatMap((item, index) => {
     z-index: 1;
     padding: var(--space-2xs) var(--space-s);
     border-radius: var(--radius-s);
-    background-color: var(--color-accent);
-    color: var(--color-on-accent);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
     font-weight: 600;
   }
 
@@ -331,7 +331,7 @@ const items = links.flatMap((item, index) => {
       inline-size: auto;
     }
 
-    // With a dark-background version, only the one that suits the surface is shown
+    // With a dark-background version, only the one that suits the background is shown
     // (display: none also hides the other one from screen readers).
     .site-nav__logo--on-light { display: var(--display-if-light); }
     .site-nav__logo--on-dark { display: var(--display-if-dark); }
@@ -415,7 +415,7 @@ const items = links.flatMap((item, index) => {
       font-weight: 700;
       text-decoration-line: underline;
       text-decoration-thickness: 2px;
-      text-decoration-color: var(--color-accent);
+      text-decoration-color: var(--color-brand);
     }
   }
 

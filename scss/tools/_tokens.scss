@@ -30,13 +30,19 @@
 
 @mixin theme-tokens {
   @each $name, $value in s.$palette {
-    --brand-#{$name}: #{$value};
+    --palette-#{$name}: #{$value};
   }
-  // The accent on the Dark surface: a lighter tint of the accent by default, because a
-  // mid-strength accent (a typical blue or pink) is too faint on near-black for links to
-  // be readable. Buttons there get dark text to match. Sites can set their own.
-  --brand-accent-on-dark: color-mix(in oklab, var(--brand-accent) 60%, var(--brand-light));
-  --brand-on-accent-on-dark: var(--brand-dark);
+  @each $name, $neutral in s.$palette-on {
+    --palette-#{$name}: var(--palette-#{$neutral});
+  }
+  // The colours on the Black background: lighter tints by default, because a mid-strength
+  // colour (a typical blue or pink) is too faint on near-black to read. Buttons there get
+  // black text to match. Sites can set their own.
+  --palette-primary-on-black: color-mix(in oklab, var(--palette-primary) 60%, var(--palette-white));
+  --palette-hover-on-black: color-mix(in oklab, var(--palette-primary) 40%, var(--palette-white));
+  --palette-on-primary-on-black: var(--palette-black);
+  --palette-brand-on-black: color-mix(in oklab, var(--palette-brand) 60%, var(--palette-white));
+  --palette-accent-on-black: var(--palette-accent);
   @each $name, $value in s.$radii {
     --radius-#{$name}: #{$value};
   }

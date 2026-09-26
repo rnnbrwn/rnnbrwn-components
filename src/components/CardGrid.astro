@@ -203,8 +203,10 @@ const fillSizes = laneSizes(section);
     border-radius: var(--radius-s);
   }
 
-  // Smaller than the section's eyebrow (.eyebrow, scss/base/_text.scss).
+  // Smaller than the section's eyebrow (.eyebrow, scss/base/_text.scss), and muted rather than
+  // the brand colour: small brand-coloured text on a card fill can fall below 4.5:1.
   .card__eyebrow {
+    color: var(--color-muted);
     font-size: var(--step--1);
   }
 
@@ -253,7 +255,7 @@ const fillSizes = laneSizes(section);
       outline: none;
 
       &::after {
-        outline: 2px solid var(--color-accent);
+        outline: 2px solid var(--color-primary);
         outline-offset: 2px;
       }
     }

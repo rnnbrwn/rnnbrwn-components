@@ -16,8 +16,8 @@ $test_page = function ( $slug, $title, $parent = 0, $order = 0 ) {
 	$id   = $page ? $page->ID : wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_name' => $slug ] );
 	wp_update_post( [ 'ID' => $id, 'post_title' => $title, 'post_parent' => $parent, 'menu_order' => $order ] );
 	update_post_meta( $id, '_wp_page_template', 'template-sections.php' );
-	// Page settings: a light page (the test pages' preview switch can show the others).
-	update_field( 'field_rs_page_surface', 'light', $id );
+	// Page settings: a white page (the test pages' preview switch can show the others).
+	update_field( 'field_rs_page_background', 'white', $id );
 	return $id;
 };
 
@@ -50,7 +50,7 @@ $example_id   = $example_page ? $example_page->ID : wp_insert_post( [
 	'meta_input'  => [ '_wp_page_template' => 'template-sections.php' ],
 ] );
 if ( ! $example_page ) {
-	update_field( 'field_rs_page_surface', 'light', $example_id );
+	update_field( 'field_rs_page_background', 'white', $example_id );
 }
 
 // ---------- Section helpers ----------
@@ -144,7 +144,7 @@ update_field( 'field_rs_navigation_source', 'menu', 'option' );
 update_field( 'field_rs_navigation_navigation_sections', [
 	[ 'target' => '/components/hero/#hero', 'label' => 'Hero' ],
 	[ 'target' => '/components/rich-text/#rich-text', 'label' => 'Rich Text' ],
-	[ 'target' => '/components/placeholder/#surfaces', 'label' => 'Surfaces' ],
+	[ 'target' => '/components/placeholder/#backgrounds', 'label' => 'Backgrounds' ],
 ], 'option' );
 update_field( 'field_rs_navigation_background', 'page', 'option' );
 update_field( 'field_rs_navigation_width', 'wide', 'option' );
@@ -246,7 +246,7 @@ $hero = fn( $heading, $settings = [] ) => $section( 'hero', [
 	'intro'             => 'An intro of a sentence or two, saying what the page is about and what to do next.',
 	'hero_buttons'      => [
 		$button( 'Main button', 'solid' ),
-		$button( 'Second button', 'outline', '/components/placeholder/#surfaces' ),
+		$button( 'Second button', 'outline', '/components/placeholder/#backgrounds' ),
 		$button( 'Text link', 'text', '/components/buttons/' ),
 	],
 	'height'            => 'standard',
@@ -264,13 +264,14 @@ $pattern    = [ 'variant' => 'background_image', 'image' => $photo_id, 'width' =
 
 $sections_hero = [
 	$hero( 'Hero: centred', [ 'anchor' => 'hero' ] ),
-	$hero( 'Hero: centred, tall, on Accent, full width', [ 'height' => 'tall', 'background' => 'accent', 'width' => 'full' ] ),
-	$hero( 'Hero: centred on Dark, as a panel', [ 'background' => 'dark' ] ),
+	$hero( 'Hero: centred, tall, on Brand, full width', [ 'height' => 'tall', 'background' => 'brand', 'width' => 'full' ] ),
+	$hero( 'Hero: centred on Black, as a panel', [ 'background' => 'black' ] ),
+	$hero( 'Hero: centred on Accent, as a panel', [ 'background' => 'accent' ] ),
 	$hero( 'Hero: heading only', [ 'eyebrow' => '', 'intro' => '', 'hero_buttons' => [] ] ),
 	$hero( 'Hero: background image, left aligned', $photo ),
-	$hero( 'Hero: background image, tall, centred, on Dark', $photo + [ 'height' => 'tall', 'alignment' => 'centre', 'background' => 'dark', 'focus' => 'top' ] ),
-	$hero( 'Hero: background image on Accent, described photo', $photo + [ 'background' => 'accent', 'image_informative' => 1 ] ),
-	$hero( 'Hero: background image, wide, on Subtle', array_merge( $photo, [ 'width' => 'wide', 'background' => 'subtle', 'hero_buttons' => [
+	$hero( 'Hero: background image, tall, centred, on Black', $photo + [ 'height' => 'tall', 'alignment' => 'centre', 'background' => 'black', 'focus' => 'top' ] ),
+	$hero( 'Hero: background image on Brand, described photo', $photo + [ 'background' => 'brand', 'image_informative' => 1 ] ),
+	$hero( 'Hero: background image, wide, on Surface', array_merge( $photo, [ 'width' => 'wide', 'background' => 'surface', 'hero_buttons' => [
 		$button( 'Main button', 'solid' ),
 		$button( 'Other site', 'outline', 'https://example.com', '_blank' ),
 	] ] ) ),
@@ -296,10 +297,11 @@ $sections_buttons = [
 		$button( 'Jump to a section', 'text', '#buttons' ),
 	] ),
 	$buttons( [ $button( 'One button on its own', 'solid' ) ] ),
-	$buttons( $every( 'on Subtle' ), [ 'background' => 'subtle' ] ),
+	$buttons( $every( 'on Surface' ), [ 'background' => 'surface' ] ),
+	$buttons( $every( 'on Brand' ), [ 'background' => 'brand' ] ),
 	$buttons( $every( 'on Accent' ), [ 'background' => 'accent' ] ),
-	$buttons( $every( 'on Dark' ), [ 'background' => 'dark' ] ),
-	$buttons( $every( 'on Dark, full width' ), [ 'background' => 'dark', 'width' => 'full', 'alignment' => 'centre', 'spacing' => 'm' ] ),
+	$buttons( $every( 'on Black' ), [ 'background' => 'black' ] ),
+	$buttons( $every( 'on Black, full width' ), [ 'background' => 'black', 'width' => 'full', 'alignment' => 'centre', 'spacing' => 'm' ] ),
 	$buttons( [
 		$button( 'A much longer button label, to see how it wraps on a phone', 'solid' ),
 		$button( 'Another long label for the outline style', 'outline' ),
@@ -337,9 +339,10 @@ $short = '<p>A short paragraph with a <a href="https://example.com">link</a>, to
 
 $sections_rich_text = [
 	$rich_text( 'Rich Text: every text style', $every_style, [ 'anchor' => 'rich-text' ] ),
-	$rich_text( 'Rich Text on Subtle, narrow', $short, [ 'width' => 'narrow', 'background' => 'subtle' ] ),
-	$rich_text( 'Rich Text on Accent, wide', $every_style, [ 'width' => 'wide', 'background' => 'accent' ] ),
-	$rich_text( 'Rich Text on Dark, full width', $every_style, [ 'width' => 'full', 'background' => 'dark' ] ),
+	$rich_text( 'Rich Text on Surface, narrow', $short, [ 'width' => 'narrow', 'background' => 'surface' ] ),
+	$rich_text( 'Rich Text on Brand, wide', $every_style, [ 'width' => 'wide', 'background' => 'brand' ] ),
+	$rich_text( 'Rich Text on Accent', $short, [ 'background' => 'accent' ] ),
+	$rich_text( 'Rich Text on Black, full width', $every_style, [ 'width' => 'full', 'background' => 'black' ] ),
 	$rich_text( '', '<p>Rich Text with no heading: just the text. ' . str_repeat( 'Body text continues to show how a longer paragraph wraps within the reading length. ', 3 ) . '</p>' ),
 ];
 
@@ -399,16 +402,16 @@ $card_grid = fn( $heading, $settings = [] ) => $section( 'card_grid', [
 $sections_card_grid = [
 	$card_grid( 'Card Grid: 3 columns, Panel', [ 'anchor' => 'card-grid' ] ),
 	$card_grid( 'Card Grid: 3 columns, Plain, no section eyebrow', [ 'card_style' => 'plain', 'eyebrow' => '' ] ),
-	$card_grid( 'Card Grid: 2 columns, narrow, on Subtle', [ 'columns' => '2', 'width' => 'narrow', 'background' => 'subtle', 'card_grid_cards' => array_slice( $cards, 0, 4 ) ] ),
-	$card_grid( 'Card Grid: 4 columns, wide, on Accent', [ 'columns' => '4', 'width' => 'wide', 'background' => 'accent' ] ),
-	$card_grid( 'Card Grid: 4 columns, Plain, full width, on Dark', [ 'columns' => '4', 'width' => 'full', 'background' => 'dark', 'card_style' => 'plain', 'card_grid_buttons' => [ $button( 'Main button', 'solid' ), $button( 'Text link', 'text' ) ] ] ),
-	$card_grid( 'Card Grid: 4 columns, Panel, on Dark, content width', [ 'columns' => '4', 'background' => 'dark', 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: 2 columns, narrow, on Surface', [ 'columns' => '2', 'width' => 'narrow', 'background' => 'surface', 'card_grid_cards' => array_slice( $cards, 0, 4 ) ] ),
+	$card_grid( 'Card Grid: 4 columns, wide, on Brand', [ 'columns' => '4', 'width' => 'wide', 'background' => 'brand' ] ),
+	$card_grid( 'Card Grid: 4 columns, Plain, full width, on Black', [ 'columns' => '4', 'width' => 'full', 'background' => 'black', 'card_style' => 'plain', 'card_grid_buttons' => [ $button( 'Main button', 'solid' ), $button( 'Text link', 'text' ) ] ] ),
+	$card_grid( 'Card Grid: 4 columns, Panel, on Black, content width', [ 'columns' => '4', 'background' => 'black', 'card_grid_buttons' => [] ] ),
 	$card_grid( '', [ 'eyebrow' => '', 'intro' => '', 'card_grid_cards' => $text_cards, 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: last card fills the row, 4 cards in 3 columns', [ 'intro' => 'With Last card set to Fill the row, the fourth card spans the whole second row.', 'last_card' => 'fill', 'card_grid_cards' => array_merge( array_slice( $text_cards, 0, 3 ), [ array_merge( $text_cards[3], [ 'text' => 'Alone on its row, so it stretches across all three columns.' ] ) ] ), 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: last card fills the row, 5 cards in 3 columns, Plain', [ 'intro' => 'The fifth card spans the two columns left; its image stays the height of the others.', 'last_card' => 'fill', 'card_style' => 'plain', 'card_grid_cards' => array_slice( $cards, 0, 5 ), 'card_grid_buttons' => [] ] ),
-	$card_grid( 'Card Grid: last card fills the row, 6 cards in 4 columns, wide, on Subtle', [ 'intro' => '', 'last_card' => 'fill', 'columns' => '4', 'width' => 'wide', 'background' => 'subtle', 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: last card fills the row, 6 cards in 4 columns, wide, on Surface', [ 'intro' => '', 'last_card' => 'fill', 'columns' => '4', 'width' => 'wide', 'background' => 'surface', 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: last card fills the row, but the row is already full', [ 'intro' => 'Three cards in three columns: nothing to fill, so nothing stretches.', 'last_card' => 'fill', 'card_grid_cards' => array_slice( $cards, 0, 3 ), 'card_grid_buttons' => [] ] ),
-	$card_grid( 'Card Grid: full width on Subtle, wide content', [ 'columns' => '4', 'width' => 'full', 'content_width' => 'wide', 'background' => 'subtle', 'card_grid_buttons' => [] ] ),
+	$card_grid( 'Card Grid: full width on Surface, wide content', [ 'columns' => '4', 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'card_grid_buttons' => [] ] ),
 	$card_grid( 'Card Grid: one card', [ 'intro' => '', 'card_grid_cards' => [ $cards[0] ], 'card_grid_buttons' => [] ] ),
 ];
 
@@ -444,11 +447,11 @@ $long_body = $media_body . '
 $sections_media_text = [
 	$media_text( 'Media Text: image left, half and half, original shape', [ 'anchor' => 'media-text', 'image' => $real_photo ? $real_photo[0]->ID : $wide_image ] ),
 	$media_text( 'Media Text: image right, Landscape crop of a tall image, keep the top', [ 'image_side' => 'right', 'image' => $tall_image, 'image_shape' => 'landscape', 'focus' => 'top' ] ),
-	$media_text( 'Media Text: Square, image wider, on Subtle', [ 'image_shape' => 'square', 'split' => 'image_wider', 'background' => 'subtle' ] ),
-	$media_text( 'Media Text: Portrait, text wider, image right, on Accent', [ 'image_shape' => 'portrait', 'split' => 'text_wider', 'image_side' => 'right', 'background' => 'accent', 'focus' => 'left', 'image' => $square_image ] ),
-	$media_text( 'Media Text: text lined up with the top, wide, on Dark', [ 'text_alignment' => 'top', 'width' => 'wide', 'background' => 'dark', 'body' => $long_body, 'image' => $square_image ] ),
-	$media_text( 'Media Text: text lined up with the bottom, full width, on Dark', [ 'text_alignment' => 'bottom', 'width' => 'full', 'background' => 'dark', 'image_side' => 'right', 'image' => $tall_image, 'media_text_buttons' => [ $button( 'Outline', 'outline' ) ] ] ),
-	$media_text( 'Media Text: full width on Subtle, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'subtle', 'image' => $square_image ] ),
+	$media_text( 'Media Text: Square, image wider, on Surface', [ 'image_shape' => 'square', 'split' => 'image_wider', 'background' => 'surface' ] ),
+	$media_text( 'Media Text: Portrait, text wider, image right, on Brand', [ 'image_shape' => 'portrait', 'split' => 'text_wider', 'image_side' => 'right', 'background' => 'brand', 'focus' => 'left', 'image' => $square_image ] ),
+	$media_text( 'Media Text: text lined up with the top, wide, on Black', [ 'text_alignment' => 'top', 'width' => 'wide', 'background' => 'black', 'body' => $long_body, 'image' => $square_image ] ),
+	$media_text( 'Media Text: text lined up with the bottom, full width, on Black', [ 'text_alignment' => 'bottom', 'width' => 'full', 'background' => 'black', 'image_side' => 'right', 'image' => $tall_image, 'media_text_buttons' => [ $button( 'Outline', 'outline' ) ] ] ),
+	$media_text( 'Media Text: full width on Surface, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'surface', 'image' => $square_image ] ),
 	$media_text( 'Media Text: long text beside a short image, middle', [ 'body' => $long_body, 'split' => 'text_wider' ] ),
 	$media_text( 'Media Text: narrow', [ 'width' => 'narrow', 'image' => $square_image, 'eyebrow' => '', 'media_text_buttons' => [] ] ),
 	$media_text( '', [ 'eyebrow' => '', 'body' => '<p>No eyebrow, heading or buttons: just text beside the image.</p>', 'media_text_buttons' => [], 'image_side' => 'right' ] ),
@@ -459,19 +462,21 @@ $sections_placeholder = [
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
 	$placeholder( 'Width: wide', [ 'width' => 'wide' ] ),
 	$placeholder( 'Width: full', [ 'width' => 'full' ], 'The background runs edge to edge; the content stays in the content lane.' ),
-	$placeholder( 'Background: same as the page', [ 'anchor' => 'surfaces' ], 'The default: always matches the page, whatever its surface.' ),
-	$placeholder( 'Background: light', [ 'background' => 'light' ], 'Blends in on a light page; a panel on any other page surface.' ),
-	$placeholder( 'Background: subtle', [ 'background' => 'subtle' ] ),
+	$placeholder( 'Background: same as the page', [ 'anchor' => 'backgrounds' ], 'The default: always matches the page, whatever its background.' ),
+	$placeholder( 'Background: white', [ 'background' => 'white' ], 'Blends in on a white page; a panel on any other page background.' ),
+	$placeholder( 'Background: surface', [ 'background' => 'surface' ] ),
+	$placeholder( 'Background: brand', [ 'background' => 'brand' ] ),
 	$placeholder( 'Background: accent', [ 'background' => 'accent' ] ),
-	$placeholder( 'Background: dark', [ 'background' => 'dark' ] ),
-	$placeholder( 'Full width, subtle background', [ 'width' => 'full', 'background' => 'subtle' ] ),
-	$placeholder( 'Full width, accent background', [ 'width' => 'full', 'background' => 'accent', 'spacing' => 'l' ] ),
-	$placeholder( 'Full width, dark background', [ 'width' => 'full', 'background' => 'dark' ] ),
-	$placeholder( 'Full width, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'subtle' ], 'The background runs edge to edge; the content lines up with the Narrow lane.' ),
-	$placeholder( 'Full width, wide content', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'subtle' ], 'The content lines up with the Wide lane.' ),
-	$placeholder( 'Spacing: none', [ 'spacing' => 'none', 'background' => 'subtle' ] ),
-	$placeholder( 'Spacing: small', [ 'spacing' => 's', 'background' => 'subtle' ] ),
-	$placeholder( 'Spacing: large', [ 'spacing' => 'l', 'background' => 'subtle' ] ),
+	$placeholder( 'Background: black', [ 'background' => 'black' ] ),
+	$placeholder( 'Full width, surface background', [ 'width' => 'full', 'background' => 'surface' ] ),
+	$placeholder( 'Full width, brand background', [ 'width' => 'full', 'background' => 'brand', 'spacing' => 'l' ] ),
+	$placeholder( 'Full width, accent background', [ 'width' => 'full', 'background' => 'accent' ] ),
+	$placeholder( 'Full width, black background', [ 'width' => 'full', 'background' => 'black' ] ),
+	$placeholder( 'Full width, narrow content', [ 'width' => 'full', 'content_width' => 'narrow', 'background' => 'surface' ], 'The background runs edge to edge; the content lines up with the Narrow lane.' ),
+	$placeholder( 'Full width, wide content', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface' ], 'The content lines up with the Wide lane.' ),
+	$placeholder( 'Spacing: none', [ 'spacing' => 'none', 'background' => 'surface' ] ),
+	$placeholder( 'Spacing: small', [ 'spacing' => 's', 'background' => 'surface' ] ),
+	$placeholder( 'Spacing: large', [ 'spacing' => 'l', 'background' => 'surface' ] ),
 	$placeholder( 'Anchor ID', [ 'anchor' => 'anchor-test' ], 'Reachable at /components/placeholder/#anchor-test.' ),
 ];
 
@@ -502,7 +507,7 @@ if ( ! get_field( 'field_rs_sections', $example_id ) ) {
 			'eyebrow'      => 'Example Site',
 			'intro'        => 'A made-up small business, to see the components working together on one page as they would on a real site.',
 			'height'       => 'tall',
-			'background'   => 'dark',
+			'background'   => 'black',
 			'hero_buttons' => [ $button( 'Get in touch', 'solid' ), $button( 'See what we do', 'text', '#services' ) ],
 		] ),
 		$rich_text( 'What we do', '<p>We design and make things for people nearby: small, careful work, done properly and delivered on time.</p>
@@ -516,11 +521,11 @@ if ( ! get_field( 'field_rs_sections', $example_id ) ) {
 		$buttons( [ $button( 'Ask for a price', 'solid' ), $button( 'Read about us', 'outline', '#about' ) ] ),
 		$rich_text( 'About us', '<p>Started in a spare room, now a small team. We still answer every message ourselves.</p>
 
-<blockquote>They listened, then made exactly what we had in mind, only better.</blockquote>', [ 'anchor' => 'about', 'background' => 'subtle' ] ),
+<blockquote>They listened, then made exactly what we had in mind, only better.</blockquote>', [ 'anchor' => 'about', 'background' => 'surface' ] ),
 		$hero( 'Ready to start?', [
 			'eyebrow'      => '',
 			'intro'        => 'Say hello and tell us about your project.',
-			'background'   => 'accent',
+			'background'   => 'brand',
 			'width'        => 'full',
 			'hero_buttons' => [ $button( 'Get in touch', 'solid' ), $button( 'Email us', 'outline', 'mailto:hello@example.com' ) ],
 		] ),

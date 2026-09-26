@@ -1,8 +1,8 @@
-// Buttons (the Button component, src/Button.astro): <a class="button"> is Solid (the accent
+// Buttons (the Button component, src/Button.astro): <a class="button"> is Solid (the primary
 // colour), .button--outline and .button--text (a plain link) are the other two styles; the
 // names match the Style choices in WordPress. Global, so any component or page can use them;
-// colours come from the roles, so they work on every surface (on Accent the solid button
-// reverses to the on-accent colour). Every style is at least --tap-target tall.
+// colours come from the roles, so they work on every background (on Brand and Accent the solid button
+// reverses to the text colour). Every style is at least --tap-target tall.
 
 .button {
   display: inline-flex;
@@ -11,10 +11,10 @@
   gap: 0.4em;
   min-block-size: var(--tap-target);
   padding: var(--space-2xs) var(--space-m);
-  border: 2px solid var(--color-accent);
+  border: 2px solid var(--color-primary);
   border-radius: var(--radius-m);
-  background-color: var(--color-accent);
-  color: var(--color-on-accent);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
@@ -24,11 +24,11 @@
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out);
 
-  // Solid and Outline never underline: on hover the fill shifts slightly and the button lifts
+  // Solid and Outline never underline: on hover the fill changes to the hover colour and the button lifts
   // with a soft shadow, which drops again while it's pressed.
   &:hover {
-    background-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
-    border-color: color-mix(in oklab, var(--color-accent) 85%, var(--color-text));
+    background-color: var(--color-hover);
+    border-color: var(--color-hover);
     box-shadow: var(--shadow-raised);
   }
 
@@ -54,7 +54,7 @@
   padding-inline: 0;
   border-color: transparent;
   background-color: transparent;
-  color: var(--color-accent);
+  color: var(--color-primary);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;

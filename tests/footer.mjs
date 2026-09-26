@@ -1,8 +1,8 @@
 // Footer: layout at each screen size (stacked on phones, brand beside the columns when there's
-// room), size and position unchanged on every surface and theme, text/link/icon contrast, 44px tap
+// room), size and position unchanged on every background and theme, text/link/icon contrast, 44px tap
 // targets, landmarks and names, the current page, new tabs, site links, the logo for dark
 // backgrounds, no JavaScript needed, axe.
-import { BASE, SHOTS, SURFACES, BRANDS, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 const PAGE = BASE + '/components/';
 const p = await newPage();
 
@@ -14,17 +14,17 @@ if (await p.$('.site-footer--line')) {
   for (const w of [375, 800, 1440]) {
     await p.setViewport({ width: w, height: 900 });
     await p.goto(PAGE, { waitUntil: 'networkidle0' });
-    await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+    await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
     check(`${w}px: no horizontal scrolling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
     const edges = await p.evaluate(() => [document.querySelector('.site-footer__line'), document.querySelector('.site-nav__bar')].map((el) => Math.round(el.getBoundingClientRect().left)));
     check(`${w}px: the line starts where the navigation does (same Width)`, edges[0] === edges[1], edges.join(' vs '));
     const base = await lineGeometry(), moved = [];
-    for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((s) => ['brand', s])]) {
+    for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((s) => ['theme', s])]) {
       await pick(p, kind, v); await wait(120);
       if ((await lineGeometry()) !== base) moved.push(v);
     }
-    check(`${w}px: the line keeps its size and position on every page surface and theme`, moved.length === 0, moved.join(', '));
-    await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(120);
+    check(`${w}px: the line keeps its size and position on every page background and theme`, moved.length === 0, moved.join(', '));
+    await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(120);
     await p.evaluate(() => document.querySelector('.site-footer').scrollIntoView());
     const box = await p.evaluate(() => { const b = document.querySelector('.site-footer').getBoundingClientRect(); return { y: b.top + scrollY, h: b.height }; });
     await p.screenshot({ path: `${SHOTS}/footer-line-${w}.png`, clip: { x: 0, y: box.y, width: w, height: box.h }, captureBeyondViewport: true });
@@ -37,24 +37,24 @@ if (await p.$('.site-footer--line')) {
   check('the line shows the © years, name and small print', new RegExp(`^© 2024–${new Date().getFullYear()} RNNBRWN Test pages, not indexed\\.$`).test(s.text), s.text);
   check('the footer is a page-level <footer> (a contentinfo landmark)', s.landmark);
   const low = [];
-  for (const brand of BRANDS) for (const surface of SURFACES) {
-    await pick(p, 'brand', brand); await pick(p, 'surface', surface); await wait(100);
+  for (const theme of THEMES) for (const bg of BACKGROUNDS) {
+    await pick(p, 'theme', theme); await pick(p, 'background', bg); await wait(100);
     const r = await p.evaluate(() => {
       const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
       return contrastRatio(rgb(getComputedStyle(document.querySelector('.site-footer__line')).color), rgb(getComputedStyle(document.querySelector('.site-footer')).backgroundColor));
     });
-    low.push([`${brand || 'default'}/${surface}`, r]);
+    low.push([`${theme || 'default'}/${bg}`, r]);
   }
   const fails = low.filter(([, r]) => r < 4.5);
-  check('the line is at least 4.5:1 on every surface × theme', fails.length === 0, fails.map(([w, r]) => `${w} ${r.toFixed(2)}`).join(', ') || `lowest ${Math.min(...low.map(([, r]) => r)).toFixed(2)}:1`);
-  await pick(p, 'brand', ''); await pick(p, 'surface', 'light');
+  check('the line is at least 4.5:1 on every background × theme', fails.length === 0, fails.map(([w, r]) => `${w} ${r.toFixed(2)}`).join(', ') || `lowest ${Math.min(...low.map(([, r]) => r)).toFixed(2)}:1`);
+  await pick(p, 'theme', ''); await pick(p, 'background', 'white');
   await axeCheck(p, 'axe scan of the footer', '.site-footer');
   await finish();
   process.exit(0);
 }
 
-// Boxes of the footer's parts, to compare between surfaces and themes.
+// Boxes of the footer's parts, to compare between backgrounds and themes.
 const geometry = () => p.evaluate(() => {
   const r = (el) => [el.left, el.top + scrollY, el.width, el.height].map(Math.round).join(',');
   return [...document.querySelectorAll('.site-footer, .site-footer__brand, .site-footer__column, .site-footer__bottom')].map((el) => r(el.getBoundingClientRect())).join(' | ');
@@ -63,7 +63,7 @@ const geometry = () => p.evaluate(() => {
 for (const w of [375, 800, 1440]) {
   await p.setViewport({ width: w, height: 900 });
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
   check(`${w}px: no horizontal scrolling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
 
   const layout = await p.evaluate(() => {
@@ -79,12 +79,12 @@ for (const w of [375, 800, 1440]) {
 
   const base = await geometry();
   const moved = [];
-  for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((s) => ['brand', s])]) {
+  for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((s) => ['theme', s])]) {
     await pick(p, kind, v); await wait(120);
     if ((await geometry()) !== base) moved.push(v);
   }
-  check(`${w}px: footer keeps its size and position on every page surface and theme`, moved.length === 0, moved.join(', '));
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  check(`${w}px: footer keeps its size and position on every page background and theme`, moved.length === 0, moved.join(', '));
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
 
   const small = await p.evaluate(() => [...document.querySelectorAll('.site-footer a')]
     .map((a) => { const b = a.getBoundingClientRect(); return [a.textContent.trim() || a.getAttribute('href'), Math.round(b.height), Math.round(b.width)]; })
@@ -96,12 +96,12 @@ for (const w of [375, 800, 1440]) {
   await p.screenshot({ path: `${SHOTS}/footer-${w}.png`, clip: { x: 0, y: box.y, width: w, height: box.h }, captureBeyondViewport: true });
 }
 
-// Contrast: text, muted text, links and icons against the footer's background, every surface × theme.
+// Contrast: text, muted text, links and icons against the footer's background, every background × theme.
 await p.setViewport({ width: 1440, height: 900 });
 const worst = [];
-for (const brand of BRANDS) {
-  for (const surface of SURFACES) {
-    await pick(p, 'brand', brand); await pick(p, 'surface', surface); await wait(120);
+for (const theme of THEMES) {
+  for (const bg of BACKGROUNDS) {
+    await pick(p, 'theme', theme); await pick(p, 'background', bg); await wait(120);
     const r = await p.evaluate(() => {
       const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const rgb = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
@@ -113,21 +113,21 @@ for (const brand of BRANDS) {
       const minIcon = Math.min(...icons.map((a) => contrastRatio(rgb(getComputedStyle(a).color), bg)));
       return { minText, minIcon };
     });
-    worst.push({ where: `${brand || 'default'}/${surface}`, ...r });
+    worst.push({ where: `${theme || 'default'}/${bg}`, ...r });
   }
 }
 const lowText = worst.filter((x) => x.minText < 4.5), lowIcon = worst.filter((x) => x.minIcon < 3);
-check('text and links are at least 4.5:1 on every surface × theme', lowText.length === 0, lowText.map((x) => `${x.where} ${x.minText.toFixed(2)}`).join(', ') || `lowest ${Math.min(...worst.map((x) => x.minText)).toFixed(2)}:1`);
-check('social icons are at least 3:1 on every surface × theme', lowIcon.length === 0, lowIcon.map((x) => x.where).join(', ') || `lowest ${Math.min(...worst.map((x) => x.minIcon)).toFixed(2)}:1`);
+check('text and links are at least 4.5:1 on every background × theme', lowText.length === 0, lowText.map((x) => `${x.where} ${x.minText.toFixed(2)}`).join(', ') || `lowest ${Math.min(...worst.map((x) => x.minText)).toFixed(2)}:1`);
+check('social icons are at least 3:1 on every background × theme', lowIcon.length === 0, lowIcon.map((x) => x.where).join(', ') || `lowest ${Math.min(...worst.map((x) => x.minIcon)).toFixed(2)}:1`);
 
-// The logo for dark backgrounds replaces the normal one on Dark and Accent.
+// The logo for dark backgrounds replaces the normal one on Black and Brand.
 const logos = {};
-for (const surface of SURFACES) {
-  await pick(p, 'brand', ''); await pick(p, 'surface', surface); await wait(100);
-  logos[surface] = await p.evaluate(() => [...document.querySelectorAll('.site-footer__logo img')].filter((i) => i.getBoundingClientRect().width > 0).map((i) => i.src.split('/').pop()).join(','));
+for (const bg of BACKGROUNDS) {
+  await pick(p, 'theme', ''); await pick(p, 'background', bg); await wait(100);
+  logos[bg] = await p.evaluate(() => [...document.querySelectorAll('.site-footer__logo img')].filter((i) => i.getBoundingClientRect().width > 0).map((i) => i.src.split('/').pop()).join(','));
 }
-check('the dark-background logo shows on Dark and Accent, the normal one elsewhere', logos.dark.includes('dark') && logos.accent.includes('dark') && !logos.light.includes('dark') && !logos.subtle.includes('dark'), JSON.stringify(logos));
-await pick(p, 'surface', 'light');
+check('the dark-background logo shows on Black and Brand, the normal one elsewhere', logos.black.includes('dark') && logos.brand.includes('dark') && !logos.white.includes('dark') && !logos.surface.includes('dark') && !logos.accent.includes('dark'), JSON.stringify(logos));
+await pick(p, 'background', 'white');
 
 // Structure and names
 const s = await p.evaluate(() => {
@@ -162,9 +162,9 @@ for (const sel of ['.site-footer__links a', '.site-footer__social a']) {
 }
 check('keyboard focus shows an outline on links and icons', ring.every((r) => r === 'solid'), ring.join(','));
 
-await axeCheck(p, 'axe scan of the footer (light)', '.site-footer');
-await pick(p, 'surface', 'dark'); await wait(120);
-await axeCheck(p, 'axe scan of the footer (dark)', '.site-footer');
+await axeCheck(p, 'axe scan of the footer (white)', '.site-footer');
+await pick(p, 'background', 'black'); await wait(120);
+await axeCheck(p, 'axe scan of the footer (black)', '.site-footer');
 
 // No JavaScript: the footer doesn't use any, so it's the same.
 const withJs = await p.evaluate(() => document.querySelector('.site-footer').innerText);

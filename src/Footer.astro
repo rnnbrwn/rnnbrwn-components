@@ -19,7 +19,7 @@
 import ButtonRow from './ButtonRow.astro';
 import NewTabNote from './NewTabNote.astro';
 import { linkTarget } from './html';
-import { choice, surfaceClass } from './settings';
+import { choice, backgroundClass } from './settings';
 import { SOCIAL_PLATFORMS, type SocialPlatform } from './social-icons';
 import type { FooterData, NavigationMenuItem } from './graphql';
 
@@ -83,14 +83,14 @@ const singleLine = footer?.layout === 'line';
 
 {singleLine ? (
   line && (
-    <footer class:list={['site-footer', 'site-footer--line', surfaceClass(choice(footer?.background, 'page'))]}>
+    <footer class:list={['site-footer', 'site-footer--line', backgroundClass(choice(footer?.background, 'page'))]}>
       <div class="l-page">
         <p class="site-footer__line" data-width={width} data-space="none">{line}</p>
       </div>
     </footer>
   )
 ) : (
-  <footer class:list={['site-footer', surfaceClass(choice(footer?.background, 'page'))]}>
+  <footer class:list={['site-footer', backgroundClass(choice(footer?.background, 'page'))]}>
     <div class="l-page">
       <div class="site-footer__inner" data-width={width} data-space="none">
         <div class:list={['site-footer__top', columns.length > 0 && 'site-footer__top--with-links']}>
@@ -236,7 +236,7 @@ const singleLine = footer?.layout === 'line';
       inline-size: auto;
     }
 
-    // With a dark-background version, only the one that suits the surface is shown.
+    // With a dark-background version, only the one that suits the background is shown.
     .site-footer__logo--on-light { display: var(--display-if-light); }
     .site-footer__logo--on-dark { display: var(--display-if-dark); }
   }
@@ -264,7 +264,7 @@ const singleLine = footer?.layout === 'line';
       color: var(--color-text);
       transition: color var(--duration-fast) var(--ease-out);
 
-      &:hover { color: var(--color-accent); }
+      &:hover { color: var(--color-primary); }
     }
 
     svg {

@@ -44,8 +44,8 @@ export function laneSizes(section: SectionSettings, share = 1, smaller = '100vw'
   return `(min-width: ${lane}rem) ${Math.ceil(lane * share)}rem, ${smaller}`;
 }
 
-/** The class for a Background setting: none for "Same as the page", otherwise surface-<name>. */
-export const surfaceClass = (surface: string) => (surface === 'page' ? undefined : `surface-${surface}`);
+/** The class for a Background setting: none for "Same as the page", otherwise bg-<name>. */
+export const backgroundClass = (value: string) => (value === 'page' ? undefined : `bg-${background(value)}`);
 
 // ---------- Shared field shapes ----------
 
@@ -72,13 +72,24 @@ export type ButtonsField = { link: WpLink; style: Choice }[] | null | undefined;
 
 // ---------- Page settings (the "Page settings" box in the page's sidebar) ----------
 
-export const SURFACES = ['light', 'subtle', 'accent', 'dark'] as const;
-export type Surface = (typeof SURFACES)[number];
+export const BACKGROUNDS = ['white', 'surface', 'brand', 'accent', 'black'] as const;
+export type Background = (typeof BACKGROUNDS)[number];
 
-export const PAGE_SETTINGS_FIELDS = 'pageSettings { surface }';
+// Names from before v0.3.0, when there were four backgrounds ("surfaces"). WordPress content
+// is moved to the new names by migrations/0.3.0-backgrounds.php; this catches any
+// it missed. (The old "accent" became "brand", but "accent" is a background again now, so only
+// the migration can move it.)
+const OLD_BACKGROUNDS: Record<string, Background> = { light: 'white', subtle: 'surface', dark: 'black' };
 
-/** The page's surface, for its <body> class: <body class={`surface-${pageSurface(page)}`}> */
-export function pageSurface(page: { pageSettings?: { surface: Choice } | null } | null | undefined): Surface {
-  const value = choice(page?.pageSettings?.surface, 'light');
-  return (SURFACES as readonly string[]).includes(value) ? (value as Surface) : 'light';
+/** A Background value as one of BACKGROUNDS (old names translated), or white if it's unknown. */
+export function background(value: string): Background {
+  const name = OLD_BACKGROUNDS[value] ?? value;
+  return (BACKGROUNDS as readonly string[]).includes(name) ? (name as Background) : 'white';
+}
+
+export const PAGE_SETTINGS_FIELDS = 'pageSettings { background }';
+
+/** The page's background, for its <body> class: <body class={`bg-${pageBackground(page)}`}> */
+export function pageBackground(page: { pageSettings?: { background: Choice } | null } | null | undefined): Background {
+  return background(choice(page?.pageSettings?.background, 'white'));
 }

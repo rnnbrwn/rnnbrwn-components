@@ -1,4 +1,4 @@
-import { BASE, SHOTS, SURFACES, BRANDS, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
+import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 // Buttons (the Button component and the Buttons section). Run against a BUILT rnnbrwn.xyz
 // served locally; see README.md.
 const PAGE = BASE + '/components/buttons/';
@@ -10,11 +10,11 @@ const geometry = () => p.evaluate(() => [...document.querySelectorAll('.buttons 
 }));
 
 // Layout: no sideways scrolling, buttons stay inside their section, and nothing moves when the page
-// surface or brand changes (backgrounds never change layout).
+// background or theme changes (backgrounds never change layout).
 for (const w of [375, 800, 1440]) {
   await p.setViewport({ width: w, height: 900 });
   await p.goto(PAGE, { waitUntil: 'networkidle0' });
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(150);
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(150);
   check(`${w}px: no horizontal scrolling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
   const outside = await p.evaluate(() => [...document.querySelectorAll('.buttons .button')].filter((a) => {
     const r = a.getBoundingClientRect(), row = a.closest('.button-row').getBoundingClientRect();
@@ -23,12 +23,12 @@ for (const w of [375, 800, 1440]) {
   check(`${w}px: every button fits inside its row`, outside.length === 0, outside.slice(0, 3).join('; '));
   const base = await geometry();
   const moved = [];
-  for (const [kind, v] of [...SURFACES.slice(1).map((s) => ['surface', s]), ...BRANDS.slice(1).map((t) => ['brand', t])]) {
+  for (const [kind, v] of [...BACKGROUNDS.slice(1).map((s) => ['background', s]), ...THEMES.slice(1).map((t) => ['theme', t])]) {
     await pick(p, kind, v); await wait(120);
     (await geometry()).forEach((g, i) => { if (g !== base[i]) moved.push(`button ${i + 1} on ${v}`); });
   }
-  check(`${w}px: buttons keep their size and position on every page surface and brand`, moved.length === 0, moved.slice(0, 3).join('; '));
-  await pick(p, 'surface', 'light'); await pick(p, 'brand', ''); await wait(120);
+  check(`${w}px: buttons keep their size and position on every page background and theme`, moved.length === 0, moved.slice(0, 3).join('; '));
+  await pick(p, 'background', 'white'); await pick(p, 'theme', ''); await wait(120);
   const sizes = await p.evaluate(() => [...document.querySelectorAll('.buttons .button')].map((a) => Math.round(a.getBoundingClientRect().height)));
   check(`${w}px: every button is at least 44px tall`, Math.min(...sizes) >= 44, `smallest ${Math.min(...sizes)}px`);
   const centred = await p.evaluate(() => [...document.querySelectorAll('.button-row--centre')].map((row) => {
@@ -47,7 +47,7 @@ const wrappedPhone = await p.evaluate(() => { const row = [...document.querySele
 check('long labels wrap onto a second line on a phone', wrappedPhone, `wrapped at 1440px too: ${wrapped}`);
 
 // Contrast: every button's text (and an outline's border) against what's behind it, at rest and
-// on hover, on every page surface and brand. Colours go through a canvas: color-mix() values aren't rgb().
+// on hover, on every page background and theme. Colours go through a canvas: color-mix() values aren't rgb().
 await p.setViewport({ width: 1440, height: 900 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); // no transitions mid-measurement
@@ -55,10 +55,10 @@ const measure = () => p.evaluate(() => {
   const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const rgba = (c) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data]; };
   return [...document.querySelectorAll('.buttons .button')].map((a) => {
-    // what's behind the button: its own fill if it has one, otherwise its surface's background
-    const surface = getComputedStyle(a.closest('[class*="surface-"]') ?? document.body).getPropertyValue('--color-bg').trim();
+    // what's behind the button: its own fill if it has one, otherwise its background's colour
+    const bg = getComputedStyle(a.closest('.bg-white, .bg-surface, .bg-brand, .bg-accent, .bg-black') ?? document.body).getPropertyValue('--color-bg').trim();
     const own = rgba(getComputedStyle(a).backgroundColor);
-    const probe = document.createElement('span'); probe.style.color = surface; document.body.append(probe);
+    const probe = document.createElement('span'); probe.style.color = bg; document.body.append(probe);
     const behind = own[3] === 255 ? own.slice(0, 3) : rgba(getComputedStyle(probe).color).slice(0, 3);
     probe.remove();
     const cs = getComputedStyle(a);
@@ -71,25 +71,25 @@ const note = (rows, state, where) => rows.forEach((r) => {
   if (r.text < worst.text) worst = { ...r, state, where };
   if (r.style === 'button--outline' && r.border < worstBorder.border) worstBorder = { ...r, state, where };
 });
-for (const brand of BRANDS) {
-  await pick(p, 'brand', brand);
-  for (const surface of SURFACES) {
-    await pick(p, 'surface', surface); await wait(60);
-    note(await measure(), 'rest', `${brand || 'default'}/${surface} page`);
+for (const theme of THEMES) {
+  await pick(p, 'theme', theme);
+  for (const bg of BACKGROUNDS) {
+    await pick(p, 'background', bg); await wait(60);
+    note(await measure(), 'rest', `${theme || 'default'}/${bg} page`);
     // hover each button in turn and measure it
     const n = await p.$$eval('.buttons .button', (x) => x.length);
     for (let i = 0; i < n; i++) {
       const el = (await p.$$('.buttons .button'))[i];
       await el.hover();
       const rows = await measure();
-      note([rows[i]], 'hover', `${brand || 'default'}/${surface} page`);
+      note([rows[i]], 'hover', `${theme || 'default'}/${bg} page`);
     }
   }
 }
 await p.mouse.move(0, 0);
-check('button text is at least 4.5:1 at rest and on hover (every button, surface and brand)', worst.text >= 4.5, `${count} measured; lowest ${worst.text.toFixed(2)}:1, "${worst.name}" ${worst.state}, ${worst.where}`);
+check('button text is at least 4.5:1 at rest and on hover (every button, background and theme)', worst.text >= 4.5, `${count} measured; lowest ${worst.text.toFixed(2)}:1, "${worst.name}" ${worst.state}, ${worst.where}`);
 check('outline borders are at least 3:1', worstBorder.border >= 3, `lowest ${worstBorder.border.toFixed(2)}:1, "${worstBorder.name}" ${worstBorder.state}, ${worstBorder.where}`);
-await pick(p, 'brand', ''); await pick(p, 'surface', 'light');
+await pick(p, 'theme', ''); await pick(p, 'background', 'white');
 
 // Hover: Solid and Outline never underline; their fill changes and a shadow appears, without moving
 const hover = [];

@@ -40,9 +40,9 @@ img, svg, video { display: block; max-width: 100%; height: auto; }
 
 a { color: inherit; }
 
-// A clear outline around whatever has keyboard focus, in every surface's accent.
+// A clear outline around whatever has keyboard focus, in every background's primary colour.
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
