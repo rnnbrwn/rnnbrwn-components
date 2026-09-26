@@ -1,0 +1,10 @@
+// Animation timings. Everything that moves uses these, so a single rule in
+// rnnbrwn-global.scss can switch motion off for people who ask for reduced motion.
+$durations: (
+  fast: 150ms,  // small changes: an icon, a hover
+  base: 250ms,  // things appearing: a menu opening
+) !default;
+
+$easings: (
+  out: cubic-bezier(0.2, 0, 0, 1),  // quick start, gentle stop
+) !default;

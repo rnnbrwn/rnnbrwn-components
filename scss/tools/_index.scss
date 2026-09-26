@@ -1,0 +1,8 @@
+// Everything a component needs; outputs no CSS, so it is safe to @use anywhere:
+//   @use 'tools' as *;
+@forward '../settings';
+@forward 'fluid';
+@forward 'scales';
+@forward 'tokens';
+@forward 'mq';
+@forward 'cq';

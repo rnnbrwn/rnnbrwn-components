@@ -1,0 +1,4 @@
+// Fluid sizes grow smoothly between these two viewport widths, and stay fixed
+// outside them. Matches the smallest phones and the xl breakpoint.
+$fluid-from: 20rem !default;  // 320px
+$fluid-to: 80rem !default;    // 1280px

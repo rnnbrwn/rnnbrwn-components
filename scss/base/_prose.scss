@@ -1,0 +1,43 @@
+// Text written in the WordPress editor, e.g. <div class="prose" set:html={html} />.
+// Global (not a component's scoped style) because Astro's scoped styles don't reach
+// HTML inserted with set:html. Colours come from the roles, so it works on every surface.
+
+.prose {
+  > * + * { margin-block-start: var(--space-s); }
+
+  // Subheadings: extra room above, and close to the text they introduce.
+  // (A section's own heading is the h2; editors get h3 and h4.)
+  > :is(h2, h3, h4) { margin-block-start: var(--space-l); }
+  > :is(h2, h3, h4) + * { margin-block-start: var(--space-2xs); }
+  > :first-child { margin-block-start: 0; }
+
+  h2 { font-size: var(--step-3); }
+  h3 { font-size: var(--step-2); }
+  h4 { font-size: var(--step-1); }
+
+  ul, ol { padding-inline-start: 1.25em; }
+  li + li { margin-block-start: var(--space-3xs); }
+  li::marker { color: var(--color-muted); }
+
+  // Underlined so a link is recognisable even where the accent matches the text
+  // (on the Accent surface both are the on-accent colour).
+  a {
+    color: var(--color-accent);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+
+    &:hover { text-decoration-thickness: 2px; }
+  }
+
+  blockquote {
+    max-width: var(--measure);
+    padding-inline-start: var(--space-s);
+    border-inline-start: 3px solid var(--color-accent);
+    font-size: var(--step-1);
+
+    > * + * { margin-block-start: var(--space-2xs); }
+  }
+
+  strong { font-weight: 700; }
+}

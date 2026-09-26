@@ -1,0 +1,26 @@
+---
+// Renders a page's sections in the order they were arranged in WordPress.
+// Goes directly inside the page grid:  <main class="l-page"><Sections sections={...} cmsUrl={...} /></main>
+// cmsUrl is the site's WordPress address (its GraphQL URL is fine): editor text uses it to
+// turn links to the CMS's own pages into site links.
+import { components } from './registry';
+import { typeName } from './graphql';
+import type { SectionSettings } from './settings';
+
+interface Props {
+  sections: SectionSettings[] | null | undefined;
+  cmsUrl?: string;
+}
+
+const { sections, cmsUrl } = Astro.props;
+const byType: Record<string, any> = Object.fromEntries(
+  Object.entries(components).map(([name, entry]) => [typeName(name), entry.component]),
+);
+---
+
+{
+  (sections ?? []).map((section) => {
+    const Component = byType[section.__typename];
+    return Component ? <Component section={section} cmsUrl={cmsUrl} /> : null;
+  })
+}

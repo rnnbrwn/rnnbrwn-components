@@ -1,0 +1,24 @@
+---
+import '../styles/site.scss';
+import '../styles/presets.scss';
+const { title = 'Layout system demo' } = Astro.props;
+---
+<!doctype html>
+<html lang="en" data-type="balanced" data-space-scale="balanced">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{title}</title>
+    <script is:inline>
+      try {
+        const saved = JSON.parse(localStorage.getItem('demo-presets') || '{}');
+        if (saved.type) document.documentElement.dataset.type = saved.type;
+        if (saved.space) document.documentElement.dataset.spaceScale = saved.space;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

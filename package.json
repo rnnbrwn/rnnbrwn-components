@@ -1,0 +1,20 @@
+{
+  "name": "@rnnbrwn/components",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Shared Sass layout system and Astro components for RNNBRWN sites",
+  "keywords": ["astro-component"],
+  "exports": {
+    ".": "./integration.mjs",
+    "./Sections.astro": "./src/Sections.astro",
+    "./Navigation.astro": "./src/Navigation.astro",
+    "./graphql": "./src/graphql.ts",
+    "./scss/*": "./scss/*"
+  },
+  "files": ["integration.mjs", "scss", "src"],
+  "peerDependencies": {
+    "astro": "^6.3.3",
+    "sass": "^1.99.0"
+  }
+}

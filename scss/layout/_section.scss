@@ -1,0 +1,11 @@
+// Vertical rhythm between page sections, set per component by an ACF Spacing field:
+//   <section data-space="s|m|l|none">
+.l-page > * {
+  padding-block: var(--section-space, var(--space-2xl));
+}
+.l-page > [data-space='none'] { --section-space: 0; }
+.l-page > [data-space='s'] { --section-space: var(--space-l); }
+.l-page > [data-space='m'] { --section-space: var(--space-2xl); }
+.l-page > [data-space='l'] { --section-space: var(--space-3xl); }
+
+// Panels (a section on a different surface from the page) are styled in base/_surfaces.scss.

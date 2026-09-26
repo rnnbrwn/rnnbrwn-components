@@ -1,0 +1,27 @@
+// Outputs the site-wide CSS once: tokens, base styles and layout classes.
+// A site's global stylesheet starts with:  @use 'rnnbrwn-global';
+@use 'tools' as *;
+@use 'base/surfaces';
+@use 'base/base';
+@use 'base/prose';
+@use 'layout/page';
+@use 'layout/section';
+@use 'layout/stack';
+
+:root {
+  @include theme-tokens;
+  @include width-tokens;
+  @include type-tokens;
+  @include space-tokens;
+  @include motion-tokens;
+  --gutter: var(--space-m);
+}
+
+// People who've asked their device for less motion get none: every animation uses these.
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    @each $name, $value in $durations {
+      --duration-#{$name}: 0ms;
+    }
+  }
+}

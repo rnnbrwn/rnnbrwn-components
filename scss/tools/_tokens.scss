@@ -1,0 +1,53 @@
+@use 'sass:list';
+@use '../settings' as s;
+@use 'fluid' as *;
+@use 'scales' as *;
+
+// Each mixin writes one group of settings out as CSS custom properties.
+// Used inside :root by global.scss; a site can call them again with its own values.
+
+@mixin type-tokens($scale: type-scale()) {
+  @each $step, $size in $scale {
+    --step-#{$step}: #{fluid(list.nth($size, 1), list.nth($size, 2))};
+  }
+}
+
+@mixin space-tokens($scale: space-scale()) {
+  @each $name, $size in $scale {
+    --space-#{$name}: #{fluid(list.nth($size, 1), list.nth($size, 2))};
+  }
+}
+
+@mixin width-tokens($widths: s.$widths) {
+  @each $name, $width in $widths {
+    --width-#{$name}: #{$width};
+  }
+  --measure: #{s.$measure};
+}
+
+@mixin theme-tokens {
+  @each $name, $value in s.$palette {
+    --brand-#{$name}: #{$value};
+  }
+  // The accent on the Dark surface: a lighter tint of the accent by default, because a
+  // mid-strength accent (a typical blue or pink) is too faint on near-black for links to
+  // be readable. Buttons there get dark text to match. Sites can set their own.
+  --brand-accent-on-dark: color-mix(in oklab, var(--brand-accent) 60%, var(--brand-light));
+  --brand-on-accent-on-dark: var(--brand-dark);
+  @each $name, $value in s.$radii {
+    --radius-#{$name}: #{$value};
+  }
+  @each $name, $value in s.$fonts {
+    --font-#{$name}: #{$value};
+  }
+  --tap-target: #{s.$tap-target};
+}
+
+@mixin motion-tokens {
+  @each $name, $value in s.$durations {
+    --duration-#{$name}: #{$value};
+  }
+  @each $name, $value in s.$easings {
+    --ease-#{$name}: #{$value};
+  }
+}

@@ -1,0 +1,10 @@
+// Width lanes of the page grid (layout/_page.scss). Components never set their
+// own max-width; they are placed in a lane with data-width="narrow|content|wide|full".
+$widths: (
+  narrow: 40rem,   // 640px
+  content: 60rem,  // 960px
+  wide: 80rem,     // 1280px
+) !default;
+
+// Longest comfortable line of running text.
+$measure: 65ch !default;

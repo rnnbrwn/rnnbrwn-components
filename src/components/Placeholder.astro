@@ -1,0 +1,94 @@
+---
+// Placeholder: a labelled box that shows its own settings, for testing the shared
+// Settings tab on test pages. WordPress half: rnnbrwn-base/sections/components/placeholder.php
+import Section from '../Section.astro';
+import { choice, type SectionSettings } from '../settings';
+
+interface Props {
+  section: SectionSettings & { heading: string | null; note: string | null };
+}
+
+const { section } = Astro.props;
+const settings = [
+  ['Width', choice(section.width, 'content')],
+  ['Spacing', choice(section.spacing, 'm')],
+  ['Background', choice(section.background, 'page')],
+  ['Anchor', section.anchor || '–'],
+];
+---
+
+<Section section={section} class="placeholder">
+  <div class="placeholder__box">
+    <h2 class="placeholder__heading">{section.heading || 'Placeholder'}</h2>
+    {section.note && <p>{section.note}</p>}
+    <dl class="placeholder__settings">
+      {settings.map(([label, value]) => (
+        <div>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+    <p class="placeholder__roles">
+      <span class="placeholder__button">Accent button</span>
+      <span class="placeholder__card">Card</span>
+      <span class="placeholder__muted">Muted text</span>
+    </p>
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  .placeholder__box {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-m);
+    border: 2px dashed currentColor;
+    border-radius: var(--radius-m);
+  }
+
+  .placeholder__heading {
+    font-size: var(--step-2);
+  }
+
+  .placeholder__settings {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2xs) var(--space-m);
+    font-size: var(--step--1);
+
+    @include cq(sm) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    dt { color: var(--color-muted); }
+    dd { font-weight: 600; }
+  }
+
+  // Samples of the colour roles, to check each surface (light, subtle, accent, dark).
+  .placeholder__roles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--step--1);
+  }
+  .placeholder__button,
+  .placeholder__card {
+    padding: var(--space-3xs) var(--space-xs);
+    border-radius: var(--radius-s);
+  }
+  .placeholder__button {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 600;
+  }
+  .placeholder__card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+  }
+  .placeholder__muted { color: var(--color-muted); }
+</style>

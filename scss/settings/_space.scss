@@ -1,0 +1,14 @@
+// Spacing scale: one base size (small screen, large screen) times a multiplier.
+$space-base: (1rem, 1.25rem) !default;   // 16px -> 20px
+
+$space-multipliers: (
+  '3xs': 0.25,
+  '2xs': 0.5,
+  'xs': 0.75,
+  's': 1,
+  'm': 1.5,
+  'l': 2,
+  'xl': 3,
+  '2xl': 4,
+  '3xl': 6,
+) !default;

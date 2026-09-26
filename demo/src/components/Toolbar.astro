@@ -1,0 +1,59 @@
+---
+const typePresets = ['compact', 'balanced', 'expressive'];
+const spacePresets = ['tight', 'balanced', 'generous'];
+---
+<header class="toolbar">
+  <div class="toolbar__group" role="group" aria-label="Type scale">
+    <span class="toolbar__label">Type</span>
+    {typePresets.map((p) => <button type="button" data-set-type={p}>{p}</button>)}
+  </div>
+  <div class="toolbar__group" role="group" aria-label="Spacing scale">
+    <span class="toolbar__label">Spacing</span>
+    {spacePresets.map((p) => <button type="button" data-set-space={p}>{p}</button>)}
+  </div>
+  <p class="toolbar__readout">
+    <span data-readout="viewport"></span>px · breakpoint <strong class="toolbar__bp"></strong>
+  </p>
+</header>
+
+<style lang="scss">
+  @use 'sass:math';
+  @use 'tools' as *;
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-l);
+    padding: var(--space-xs) var(--gutter);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-size: var(--step--1);
+  }
+  .toolbar__group { display: flex; align-items: center; gap: var(--space-3xs); }
+  .toolbar__label { margin-inline-end: var(--space-2xs); opacity: 0.7; }
+  .toolbar__readout { margin-inline-start: auto; }
+
+  button {
+    font: inherit;
+    padding: var(--space-3xs) var(--space-xs);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-transform: capitalize;
+    &[aria-pressed='true'] { background: var(--color-bg); color: var(--color-text); }
+  }
+
+  // Shows which mq() breakpoint is active, straight from the settings map.
+  .toolbar__bp::after { content: 'none (below sm)'; }
+  @each $name, $value in $breakpoints {
+    @include mq($name) {
+      .toolbar__bp::after { content: '#{$name} (from #{math.div($value, 1em) * 16}px)'; }
+    }
+  }
+</style>

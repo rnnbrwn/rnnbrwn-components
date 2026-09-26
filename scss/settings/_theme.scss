@@ -1,0 +1,20 @@
+// Brand colours: the only colours a site sets. The library builds the four surfaces
+// (light, subtle, accent, dark) from them; see base/_surfaces.scss.
+// Sites override them as CSS custom properties after @use 'rnnbrwn-global':
+//   :root { --brand-accent: #e50053; --brand-dark: #292f36; }
+$palette: (
+  light: #ffffff,      // page background, and text on dark
+  subtle: #f3f3f5,     // the subtle background
+  dark: #1d1d1f,       // body text, and the dark background
+  accent: #3b5bdb,     // the accent background, links and buttons
+  on-accent: #ffffff,  // text and buttons on the accent background
+) !default;
+
+$radii: (
+  s: 0.25rem,
+  m: 0.5rem,
+  l: 1rem,
+) !default;
+
+// The smallest comfortable size for anything tapped or clicked (44px, the WCAG target size).
+$tap-target: 2.75rem !default;

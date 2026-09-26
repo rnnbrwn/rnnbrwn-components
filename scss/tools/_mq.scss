@@ -1,0 +1,13 @@
+@use 'sass:map';
+@use '../settings' as s;
+
+// Viewport query, mobile-first. For page-level layout only:
+//   @include mq(md) { ... }
+@mixin mq($from) {
+  @if not map.has-key(s.$breakpoints, $from) {
+    @error 'Unknown breakpoint `#{$from}`. Use one of: #{map.keys(s.$breakpoints)}';
+  }
+  @media (min-width: map.get(s.$breakpoints, $from)) {
+    @content;
+  }
+}

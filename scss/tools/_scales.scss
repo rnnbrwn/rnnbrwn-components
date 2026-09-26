@@ -1,0 +1,24 @@
+@use 'sass:list';
+@use 'sass:map';
+@use 'sass:math';
+@use '../settings' as s;
+
+// Returns (step: (min, max), ...) for each step of the type scale.
+@function type-scale($base: s.$type-base, $ratio: s.$type-ratio, $steps: s.$type-steps) {
+  $scale: ();
+  @for $i from list.nth($steps, 1) through list.nth($steps, 2) {
+    $min: list.nth($base, 1) * math.pow(list.nth($ratio, 1), $i);
+    $max: list.nth($base, 2) * math.pow(list.nth($ratio, 2), $i);
+    $scale: map.set($scale, $i, ($min, $max));
+  }
+  @return $scale;
+}
+
+// Returns (name: (min, max), ...) for each step of the spacing scale.
+@function space-scale($base: s.$space-base, $multipliers: s.$space-multipliers) {
+  $scale: ();
+  @each $name, $m in $multipliers {
+    $scale: map.set($scale, $name, (list.nth($base, 1) * $m, list.nth($base, 2) * $m));
+  }
+  @return $scale;
+}

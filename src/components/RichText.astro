@@ -1,0 +1,34 @@
+---
+// Rich Text: an optional heading and a block of editor text.
+// WordPress half: rnnbrwn-base/sections/components/rich-text.php
+import Section from '../Section.astro';
+import { editorHtml } from '../html';
+import type { SectionSettings } from '../settings';
+
+interface Props {
+  section: SectionSettings & { heading: string | null; body: string | null };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+const body = editorHtml(section.body, cmsUrl);
+---
+
+<Section section={section} class="rich-text">
+  <div class="rich-text__inner">
+    {section.heading && <h2 class="rich-text__heading">{section.heading}</h2>}
+    {body && <div class="prose" set:html={body} />}
+  </div>
+</Section>
+
+<style lang="scss">
+  .rich-text__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  .rich-text__heading {
+    max-width: var(--measure);
+  }
+</style>

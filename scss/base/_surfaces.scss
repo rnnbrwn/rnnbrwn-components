@@ -1,0 +1,128 @@
+// Surfaces: the four colour schemes every site has, built from its brand colours.
+//   surface-light   light background, dark text (the default)
+//   surface-subtle  a gentle tint
+//   surface-accent  the brand colour
+//   surface-dark    reversed out
+//
+// Put a surface class on <body> to set the whole site's theme (e.g. <body class="surface-dark">
+// for a dark site), on a section (the ACF Background setting does this), or on any element.
+// Each one redefines the colour roles for everything inside it, so components only ever
+// use the roles (--color-bg, --color-text, --color-accent, ...) and work on any surface.
+@use 'sass:list';
+
+$surfaces: (light, subtle, accent, dark);
+
+:root,
+.surface-light {
+  --color-bg: var(--brand-light);
+  --color-text: var(--brand-dark);
+  --color-accent: var(--brand-accent);
+  --color-on-accent: var(--brand-on-accent);
+}
+
+.surface-subtle {
+  --color-bg: var(--brand-subtle);
+  --color-text: var(--brand-dark);
+  --color-accent: var(--brand-accent);
+  --color-on-accent: var(--brand-on-accent);
+}
+
+.surface-accent {
+  --color-bg: var(--brand-accent);
+  --color-text: var(--brand-on-accent);
+  --color-accent: var(--brand-on-accent);
+  --color-on-accent: var(--brand-accent);
+}
+
+.surface-dark {
+  --color-bg: var(--brand-dark);
+  --color-text: var(--brand-light);
+  --color-accent: var(--brand-accent-on-dark);
+  --color-on-accent: var(--brand-on-accent-on-dark);
+  color-scheme: dark; // dark scrollbars and form controls
+}
+
+// Whether a surface is light or dark, for things that can't recolour themselves, like
+// images. `display: var(--display-if-dark)` shows an element only on dark surfaces; Accent
+// counts as dark (its text is usually light), which a site can change:
+//   .surface-accent { --display-if-light: block; --display-if-dark: none; }
+:root,
+.surface-light,
+.surface-subtle {
+  --display-if-light: block;
+  --display-if-dark: none;
+}
+.surface-accent,
+.surface-dark {
+  --display-if-light: none;
+  --display-if-dark: block;
+}
+
+// Roles worked out from the ones above. They're declared on every surface (not just
+// :root) so they're recalculated inside each one.
+:root,
+.surface-light,
+.surface-subtle,
+.surface-accent,
+.surface-dark {
+  --color-muted: color-mix(in oklab, var(--color-text) 70%, var(--color-bg));
+  --color-border: color-mix(in oklab, var(--color-text) 18%, var(--color-bg));
+  --color-card: color-mix(in oklab, var(--color-text) 6%, var(--color-bg));
+}
+
+.surface-light,
+.surface-subtle,
+.surface-accent,
+.surface-dark {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+// The page's own surface is whatever is on <body> (light if nothing is). Paint the area
+// around the page to match, so overscrolling doesn't reveal a light edge on a dark site.
+@each $surface in $surfaces {
+  :root:has(> body.surface-#{$surface}) {
+    background-color: var(--brand-#{$surface});
+  }
+}
+
+// The page's surface, as a selector: body.surface-dark, or for light, a body with no other surface.
+@function page($surface) {
+  @if $surface == light {
+    @return 'body:not(.surface-subtle, .surface-accent, .surface-dark)';
+  }
+  @return 'body.surface-#{$surface}';
+}
+
+// A section on a different surface from the page, and not full width, becomes a panel: a
+// rounded block of its colour. A section on the same surface as the page just blends in.
+//
+// The panel is only painted, never laid out: its colour is drawn by ::before, behind the
+// section, so changing a section's background never moves or resizes anything.
+//   - Sideways it reaches out into the gutter (no further, or it would run off the screen
+//     on phones), so the content keeps exactly its lane width.
+//   - Top and bottom it's pulled in slightly (never more than half the section's spacing,
+//     so it can't cut into the content), leaving a gap between two panels in a row.
+@each $page in $surfaces {
+  $others: ();
+  @each $surface in $surfaces {
+    @if $surface != $page {
+      $others: list.append($others, '.surface-#{$surface}', $separator: comma);
+    }
+  }
+  #{page($page)} .l-page > :is(#{$others}):not([data-width='full']) {
+    position: relative;
+    isolation: isolate;
+    background-color: transparent;
+
+    &::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      inset-block: min(var(--space-2xs), var(--section-space, var(--space-2xl)) / 2);
+      inset-inline: calc(var(--gutter) * -1);
+      background-color: var(--color-bg);
+      border-radius: var(--radius-l);
+    }
+  }
+}

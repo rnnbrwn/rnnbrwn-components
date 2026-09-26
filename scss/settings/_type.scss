@@ -1,0 +1,10 @@
+// Type scale. Step 0 is body text; each step up multiplies by the ratio.
+// Pairs are (small screen, large screen).
+$type-base: (1rem, 1.125rem) !default;   // 16px -> 18px
+$type-ratio: (1.2, 1.25) !default;
+$type-steps: (-2, 5) !default;           // --step--2 ... --step-5
+
+$fonts: (
+  body: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
+  heading: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
+) !default;

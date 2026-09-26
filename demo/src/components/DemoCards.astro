@@ -1,0 +1,52 @@
+---
+// A stand-in for a real Card Grid component, to show container queries:
+// its column count depends on its own width, not the screen's.
+const { count = 6 } = Astro.props;
+---
+<div class="demo-cards" data-cards>
+  <p class="demo-cards__meta">
+    Container <span data-cards-width></span>px → <strong data-cards-cols></strong>
+  </p>
+  <ul class="demo-cards__items">
+    {Array.from({ length: count }, (_, i) => (
+      <li class="demo-cards__card">
+        <h3 class="demo-cards__title">Card {i + 1}</h3>
+        <p>Short supporting text for this card.</p>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  .demo-cards { container-type: inline-size; }
+
+  .demo-cards__meta {
+    margin-block-end: var(--space-xs);
+    font-size: var(--step--1);
+    color: var(--color-muted);
+  }
+
+  .demo-cards__items {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-s);
+    grid-template-columns: 1fr;
+
+    @include cq(sm) { grid-template-columns: repeat(2, 1fr); }
+    @include cq(lg) { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .demo-cards__card {
+    padding: var(--space-m);
+    background: var(--color-card);
+    border-radius: var(--radius-m);
+  }
+
+  .demo-cards__title {
+    font-size: var(--step-1);
+    margin-block-end: var(--space-2xs);
+  }
+</style>

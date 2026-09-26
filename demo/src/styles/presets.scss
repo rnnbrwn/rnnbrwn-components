@@ -1,0 +1,28 @@
+// Demo only: alternative type and spacing scales to compare, switched with
+// data-type / data-space-scale on <html>. The library default is "balanced".
+@use 'sass:map';
+@use 'tools' as *;
+
+$type-presets: (
+  compact:    (base: (1rem, 1.125rem), ratio: (1.125, 1.2)),
+  balanced:   (base: (1rem, 1.125rem), ratio: (1.2, 1.25)),
+  expressive: (base: (1rem, 1.25rem),  ratio: (1.2, 1.333)),
+);
+
+$space-presets: (
+  tight:    (0.875rem, 1rem),
+  balanced: (1rem, 1.25rem),
+  generous: (1.125rem, 1.625rem),
+);
+
+@each $name, $p in $type-presets {
+  :root[data-type='#{$name}'] {
+    @include type-tokens(type-scale(map.get($p, base), map.get($p, ratio)));
+  }
+}
+
+@each $name, $base in $space-presets {
+  :root[data-space-scale='#{$name}'] {
+    @include space-tokens(space-scale($base));
+  }
+}

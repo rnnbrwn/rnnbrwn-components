@@ -1,0 +1,14 @@
+@use 'sass:math';
+@use '../settings' as s;
+
+@function round4($n) {
+  @return math.div(math.round($n * 10000), 10000);
+}
+
+// A size that grows from $min (at $from viewport) to $max (at $to viewport).
+// fluid(1rem, 1.5rem) -> clamp(1rem, 0.8333rem + 0.8333vw, 1.5rem)
+@function fluid($min, $max, $from: s.$fluid-from, $to: s.$fluid-to) {
+  $slope: math.div($max - $min, $to - $from);
+  $intercept: $min - $slope * $from;
+  @return clamp(#{round4($min)}, #{round4($intercept)} + #{round4($slope * 100)}vw, #{round4($max)});
+}

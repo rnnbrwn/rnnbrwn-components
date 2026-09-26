@@ -1,0 +1,310 @@
+---
+import Base from '../layouts/Base.astro';
+import Toolbar from '../components/Toolbar.astro';
+import DemoCards from '../components/DemoCards.astro';
+
+const steps = [5, 4, 3, 2, 1, 0, -1, -2];
+const stepUse = {
+  5: 'h1', 4: 'h2', 3: 'h3', 2: 'h4', 1: 'h5 / lead text', 0: 'body text', '-1': 'small print', '-2': 'labels',
+};
+const spaces = ['3xs', '2xs', 'xs', 's', 'm', 'l', 'xl', '2xl', '3xl'];
+const lanes = ['narrow', 'content', 'wide', 'full'];
+---
+<Base>
+  <Toolbar />
+
+  <main class="l-page">
+    <section data-width="full" data-inner="content" class="surface-subtle">
+      <div class="l-stack">
+        <h1>Layout system demo</h1>
+        <p class="demo-lead">
+          Drag the window narrower and wider. Switch the type and spacing presets in the bar above.
+          Everything on this page uses only the shared tokens, the page grid and the mq()/cq() mixins.
+        </p>
+      </div>
+    </section>
+
+    <section class="l-stack">
+      <h2>Type scale</h2>
+      <p>
+        Each row is one step. The first number is its size right now; the range is its size on a
+        320px screen → a 1280px screen. Between those it grows smoothly, with no breakpoints.
+      </p>
+      <ol class="demo-steps">
+        {steps.map((step) => (
+          <li class="demo-steps__row" data-step={step}>
+            <span class="demo-meta">
+              <strong>--step-{step}</strong> · {stepUse[step]}<br />
+              <span data-out></span>
+            </span>
+            <span class="demo-steps__sample" style={`font-size: var(--step-${step})`}>
+              Almost before we knew it
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="l-stack">
+      <h2>Spacing scale</h2>
+      <p>
+        Used for padding, gaps and the space between sections. Each bar is exactly as wide as that
+        step. These also grow smoothly with the screen.
+      </p>
+      <ol class="demo-space">
+        {spaces.map((name) => (
+          <li class="demo-space__row" data-space-name={name}>
+            <span class="demo-meta"><strong>--space-{name}</strong> <span data-out></span></span>
+            <span class="demo-space__bar" style={`width: var(--space-${name})`}></span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="l-stack" data-space="s">
+      <h2>Width lanes</h2>
+      <p>
+        Every component sits in one of these lanes, chosen in WordPress. The side gutter
+        (--gutter) keeps content off the screen edge; only "full" goes edge to edge.
+      </p>
+    </section>
+    {lanes.map((lane) => (
+      <div data-width={lane} class="demo-lane-row">
+        <div class="demo-lane" data-measure>
+          <strong>{lane}</strong> <span data-measure-out></span>px
+        </div>
+      </div>
+    ))}
+
+    <section class="l-stack">
+      <h2>Container queries</h2>
+      <p>
+        The same card component three times. Its columns depend on how wide <em>it</em> is:
+        1 column below 480px, 2 from 480px, 3 from 800px. The screen size doesn't matter.
+      </p>
+    </section>
+    <div data-width="wide" data-space="none" class="demo-split">
+      <div class="l-stack">
+        <p class="demo-meta">Main column (wide lane, 2/3)</p>
+        <DemoCards count={6} />
+      </div>
+      <aside class="l-stack">
+        <p class="demo-meta">Sidebar (1/3)</p>
+        <DemoCards count={3} />
+      </aside>
+    </div>
+    <div data-width="narrow" class="l-stack">
+      <p class="demo-meta">Narrow lane</p>
+      <DemoCards count={4} />
+    </div>
+
+    <section data-width="full" data-inner="narrow" data-space="l" class="surface-accent">
+      <div class="l-stack">
+        <h2>A full-width band</h2>
+        <p>
+          The background runs edge to edge, but the text lines up with the narrow lane. This is how
+          a hero or a call-to-action banner will work. This band uses the large section spacing.
+        </p>
+        <div class="l-cluster">
+          <a class="demo-button" href="#">Primary action</a>
+          <a class="demo-button demo-button--ghost" href="#">Secondary</a>
+        </div>
+      </div>
+    </section>
+
+    <article class="l-stack demo-prose">
+      <h2>Sample page content</h2>
+      <p class="demo-lead">
+        A lead paragraph, one step up from body text, to see how the presets feel in real text
+        rather than as a list of sizes.
+      </p>
+      <p>
+        Body text sits at step 0. Lines stop at about 65 characters (--measure) however wide the
+        lane is, because longer lines get hard to read. Headings use steps 1 to 5, so the gap between
+        a heading and its text is decided by the ratio you pick above.
+      </p>
+      <h3>A third-level heading</h3>
+      <p>
+        Compare the presets here. Compact suits information-heavy sites; expressive suits
+        portfolio-style sites with big statements; balanced sits between them.
+      </p>
+      <ul>
+        <li>A list item using the same body size</li>
+        <li>Another list item</li>
+      </ul>
+      <h4>A fourth-level heading</h4>
+      <p class="demo-small">Small print at step -1, for captions and footnotes.</p>
+    </article>
+  </main>
+</Base>
+
+<script>
+  const root = document.documentElement;
+  const remPx = () => parseFloat(getComputedStyle(root).fontSize);
+  const px = (n: number) => Math.round(n);
+
+  // Reads "clamp(1rem, … , 1.5rem)" from a custom property and returns [min, max] in px.
+  function range(name: string) {
+    const value = getComputedStyle(root).getPropertyValue(name).trim();
+    const m = value.match(/^clamp\(\s*([\d.]+)rem\s*,.*,\s*([\d.]+)rem\s*\)$/);
+    return m ? [parseFloat(m[1]) * remPx(), parseFloat(m[2]) * remPx()] : null;
+  }
+
+  function update() {
+    document.querySelector('[data-readout="viewport"]')!.textContent = String(window.innerWidth);
+
+    document.querySelectorAll<HTMLElement>('[data-step]').forEach((row) => {
+      const sample = row.querySelector<HTMLElement>('.demo-steps__sample')!;
+      const now = parseFloat(getComputedStyle(sample).fontSize);
+      const r = range(`--step-${row.dataset.step}`);
+      row.querySelector('[data-out]')!.textContent =
+        `${px(now)}px now` + (r ? ` · ${px(r[0])} → ${px(r[1])}px` : '');
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-space-name]').forEach((row) => {
+      const bar = row.querySelector<HTMLElement>('.demo-space__bar')!;
+      const r = range(`--space-${row.dataset.spaceName}`);
+      row.querySelector('[data-out]')!.textContent =
+        `${px(bar.getBoundingClientRect().width)}px now` + (r ? ` · ${px(r[0])} → ${px(r[1])}px` : '');
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-measure]').forEach((el) => {
+      el.querySelector('[data-measure-out]')!.textContent = String(px(el.getBoundingClientRect().width));
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-cards]').forEach((el) => {
+      const cols = getComputedStyle(el.querySelector('.demo-cards__items')!)
+        .gridTemplateColumns.split(' ').length;
+      el.querySelector('[data-cards-width]')!.textContent = String(px(el.getBoundingClientRect().width));
+      el.querySelector('[data-cards-cols]')!.textContent = `${cols} column${cols > 1 ? 's' : ''}`;
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-set-type]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.setType === root.dataset.type)));
+    document.querySelectorAll<HTMLButtonElement>('[data-set-space]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.setSpace === root.dataset.spaceScale)));
+  }
+
+  function save() {
+    try {
+      localStorage.setItem('demo-presets',
+        JSON.stringify({ type: root.dataset.type, space: root.dataset.spaceScale }));
+    } catch {}
+  }
+
+  document.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-set-type], [data-set-space]');
+    if (!b) return;
+    if (b.dataset.setType) root.dataset.type = b.dataset.setType;
+    if (b.dataset.setSpace) root.dataset.spaceScale = b.dataset.setSpace;
+    save();
+    requestAnimationFrame(update);
+  });
+
+  new ResizeObserver(update).observe(document.body);
+  update();
+</script>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+
+  .demo-lead { font-size: var(--step-1); }
+  .demo-small { font-size: var(--step--1); color: var(--color-muted); }
+
+  .demo-meta {
+    font-size: var(--step--1);
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .demo-steps,
+  .demo-space {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .demo-steps__row {
+    display: grid;
+    gap: var(--space-3xs);
+    padding-block: var(--space-xs);
+    border-block-end: 1px solid var(--color-border);
+    max-width: none;
+
+    @include mq(md) {
+      grid-template-columns: 14rem 1fr;
+      align-items: baseline;
+      gap: var(--space-m);
+    }
+  }
+
+  .demo-steps__sample {
+    font-family: var(--font-heading);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .demo-space { gap: var(--space-2xs); }
+
+  .demo-space__row {
+    display: grid;
+    gap: var(--space-3xs);
+    max-width: none;
+
+    @include mq(sm) {
+      grid-template-columns: 20rem 1fr;
+      align-items: center;
+      gap: var(--space-m);
+    }
+  }
+
+  .demo-space__bar {
+    display: block;
+    height: 1.25rem;
+    background: var(--color-accent);
+    border-radius: var(--radius-s);
+  }
+
+  .demo-lane-row { --section-space: var(--space-3xs); }
+
+  .demo-lane {
+    padding: var(--space-s);
+    background: var(--color-card);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-s);
+    font-size: var(--step--1);
+    text-align: center;
+
+    strong { text-transform: capitalize; }
+  }
+
+  .demo-split {
+    display: grid;
+    gap: var(--space-l);
+
+    @include mq(md) { grid-template-columns: 2fr 1fr; }
+  }
+
+
+  .demo-button {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-m);
+    border-radius: var(--radius-s);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    text-decoration: none;
+    font-weight: 600;
+
+    &--ghost {
+      background: transparent;
+      color: var(--color-accent);
+      border: 1px solid currentColor;
+    }
+  }
+
+  .demo-prose { --stack-gap: var(--space-s); }
+  .demo-prose h3,
+  .demo-prose h4 { margin-block-start: var(--space-s); }
+</style>

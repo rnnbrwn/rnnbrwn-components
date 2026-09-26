@@ -1,0 +1,34 @@
+---
+// The outer element of every component. It applies the shared Settings tab from WordPress:
+// places the component in its width lane of the page grid, and sets its spacing,
+// surface (the Background setting) and anchor. "Same as the page" (the default) adds no
+// surface, so the section follows the page's; a surface matching the page blends in, and a
+// different one becomes a panel. A full-width section keeps its content in the content lane
+// unless `bleed` is set (for things that should run edge to edge, like a big image).
+import { choice, type SectionSettings } from './settings';
+
+interface Props {
+  section: SectionSettings;
+  as?: string;
+  bleed?: boolean;
+  [attr: string]: any;
+}
+
+const { section, as: Tag = 'section', bleed = false, class: className, ...attrs } = Astro.props;
+const width = choice(section.width, 'content');
+const surface = choice(section.background, 'page');
+// Tidied the same way WordPress saves it ("Our Services" → "our-services").
+const anchor =
+  section.anchor?.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || undefined;
+---
+
+<Tag
+  {...attrs}
+  class:list={[className, surface !== 'page' && `surface-${surface}`]}
+  id={anchor}
+  data-width={width}
+  data-space={choice(section.spacing, 'm')}
+  data-inner={width === 'full' && !bleed ? 'content' : undefined}
+>
+  <slot />
+</Tag>

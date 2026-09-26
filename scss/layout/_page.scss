@@ -1,0 +1,33 @@
+// The page grid. Every direct child sits in the content lane unless it says otherwise:
+//   <section data-width="narrow|content|wide|full">
+// A full-width child with data-inner="narrow|content|wide" keeps its background
+// edge to edge but lines its own children up with that lane.
+.l-page {
+  // Each lane is its target width, or the screen minus the gutters if that's smaller.
+  --lane-narrow: min(100% - var(--gutter) * 2, var(--width-narrow));
+  --lane-content: min(100% - var(--gutter) * 2, var(--width-content));
+  --lane-wide: min(100% - var(--gutter) * 2, var(--width-wide));
+
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--gutter), 1fr)
+    [wide-start] calc((var(--lane-wide) - var(--lane-content)) / 2)
+    [content-start] calc((var(--lane-content) - var(--lane-narrow)) / 2)
+    [narrow-start] var(--lane-narrow) [narrow-end]
+    calc((var(--lane-content) - var(--lane-narrow)) / 2) [content-end]
+    calc((var(--lane-wide) - var(--lane-content)) / 2) [wide-end]
+    minmax(var(--gutter), 1fr) [full-end];
+
+  > * { grid-column: content; }
+  > [data-width='narrow'] { grid-column: narrow; }
+  > [data-width='wide'] { grid-column: wide; }
+  > [data-width='full'] { grid-column: full; }
+
+  > [data-width='full'][data-inner] {
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  > [data-inner] > * { grid-column: content; }
+  > [data-inner='narrow'] > * { grid-column: narrow; }
+  > [data-inner='wide'] > * { grid-column: wide; }
+}

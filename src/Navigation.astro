@@ -1,0 +1,360 @@
+---
+// Navigation: the site header. The logo (or the site title) links home; the main links sit
+// in the bar on wider screens and behind a menu button on small ones (below the md breakpoint).
+// WordPress half: rnnbrwn-base/sections/site/navigation.php (wp-admin → Navigation). The links
+// come from a WordPress menu (Appearance → Menus, "Main navigation" location) or, for one-page
+// sites, from sections picked by their Anchor ID.
+//
+// Put it first in <body>, and give the page's <main> the id in `mainId` so the
+// "Skip to content" link has somewhere to go:
+//   <Navigation data={data} cmsUrl={import.meta.env.GRAPHQL_URL} />
+//   <main id="main" class="l-page">...</main>
+//
+// Accessibility: a skip link first; the menu button says whether the menu is open
+// (aria-expanded) and which element it controls; closed links are hidden from keyboards and
+// screen readers; Escape, clicking outside or tabbing away closes the menu; the current page
+// is marked (aria-current); new-tab links say so; motion follows prefers-reduced-motion;
+// without JavaScript the links are simply shown.
+import { siteLink } from './html';
+import { choice } from './settings';
+import type { NavigationData } from './graphql';
+
+interface Props {
+  data: NavigationData;
+  cmsUrl?: string;
+  mainId?: string;
+  /** Label for the list of links, read out by screen readers. */
+  label?: string;
+}
+
+const { data, cmsUrl, mainId = 'main', label = 'Main' } = Astro.props;
+const nav = data.navigationSettings?.navigation;
+const siteTitle = data.generalSettings?.title ?? '';
+const surface = choice(nav?.background, 'page');
+const width = choice(nav?.width, 'wide');
+const logo = nav?.logo?.node;
+const logoDark = nav?.logoDark?.node;
+const menuId = 'site-navigation-menu';
+
+const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
+const here = trimSlash(Astro.url.pathname);
+
+// The links: from the WordPress menu in the "Main navigation" location, or (for one-page
+// sites) from the sections picked in wp-admin → Navigation.
+const source =
+  nav?.source === 'sections'
+    ? (nav.navigationSections ?? []).map((item) => ({ url: choice(item.target, ''), title: item.label, target: null }))
+    : (data.navigationMenu?.nodes ?? []).map((item) => ({ url: item.url, title: item.label, target: item.target }));
+
+const links = source
+  .filter((link) => !!link.url)
+  .map((link) => {
+    let href = siteLink(link.url, cmsUrl);
+    // "#contact" typed into a menu means that section of the home page, from any page.
+    if (href.startsWith('#')) href = `/${href}`;
+    const newTab = link.target === '_blank';
+    // Current page: a site link to this path (not an anchor within it).
+    const current = href.startsWith('/') && !href.includes('#') && trimSlash(href.split('?')[0]) === here;
+    return { href, title: link.title || href, newTab, current };
+  });
+---
+
+<header class:list={['site-nav', surface !== 'page' && `surface-${surface}`]} data-site-nav>
+  {/* Runs straight away, before the links are drawn, so they never flash open while the page loads. */}
+  <script is:inline>document.currentScript.parentElement.setAttribute('data-enhanced', '');</script>
+
+  <a class="site-nav__skip visually-hidden-focusable" href={`#${mainId}`}>Skip to content</a>
+
+  <div class="l-page">
+    <div class="site-nav__bar" data-width={width} data-space="none">
+      <a class="site-nav__logo" href="/">
+        {logo ? (
+          <>
+            <img
+              class:list={[logoDark && 'site-nav__logo--on-light']}
+              src={logo.sourceUrl}
+              width={logo.mediaDetails?.width}
+              height={logo.mediaDetails?.height}
+              alt={siteTitle}
+            />
+            {logoDark && (
+              <img
+                class="site-nav__logo--on-dark"
+                src={logoDark.sourceUrl}
+                width={logoDark.mediaDetails?.width}
+                height={logoDark.mediaDetails?.height}
+                alt={siteTitle}
+              />
+            )}
+          </>
+        ) : (
+          <span>{siteTitle}</span>
+        )}
+      </a>
+
+      {links.length > 0 && (
+        <>
+          <button type="button" class="site-nav__toggle" aria-expanded="false" aria-controls={menuId}>
+            <span class="site-nav__icon" aria-hidden="true"><span /><span /><span /></span>
+            <span class="visually-hidden">Menu</span>
+          </button>
+
+          <nav id={menuId} class="site-nav__menu" aria-label={label}>
+            <ul class="site-nav__links">
+              {links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    aria-current={link.current ? 'page' : undefined}
+                    target={link.newTab ? '_blank' : undefined}
+                    rel={link.newTab ? 'noopener' : undefined}
+                  >
+                    {link.title}
+                    {link.newTab && <span class="visually-hidden"> (opens in a new tab)</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </>
+      )}
+    </div>
+  </div>
+</header>
+
+<script>
+  // Every page's header; `md` must match the breakpoint in the styles below.
+  const wide = window.matchMedia('(min-width: 48em)');
+
+  document.querySelectorAll<HTMLElement>('[data-site-nav]').forEach((header) => {
+    const button = header.querySelector<HTMLButtonElement>('.site-nav__toggle');
+    const menu = header.querySelector<HTMLElement>('.site-nav__menu');
+    if (!button || !menu) return;
+
+    const isOpen = () => button.getAttribute('aria-expanded') === 'true';
+    const setOpen = (open: boolean, { returnFocus = false } = {}) => {
+      button.setAttribute('aria-expanded', String(open));
+      header.toggleAttribute('data-open', open);
+      if (!open && returnFocus) button.focus();
+    };
+
+    button.addEventListener('click', () => setOpen(!isOpen()));
+
+    // Escape closes the menu and puts focus back on the button.
+    header.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen()) {
+        event.preventDefault();
+        setOpen(false, { returnFocus: true });
+      }
+    });
+
+    // Tabbing out of the header, or clicking anywhere else, closes it.
+    header.addEventListener('focusout', (event) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && !header.contains(next)) setOpen(false);
+    });
+    document.addEventListener('click', (event) => {
+      if (isOpen() && !header.contains(event.target as Node)) setOpen(false);
+    });
+
+    // Following a link (e.g. to a section further down this page) closes it.
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) setOpen(false);
+    });
+
+    // On wider screens the links are always shown, so there's no open menu to keep.
+    wide.addEventListener('change', () => setOpen(false));
+  });
+</script>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  .site-nav {
+    position: relative;
+    z-index: 10;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .site-nav__skip {
+    position: absolute;
+    inset-block-start: var(--space-2xs);
+    inset-inline-start: var(--space-2xs);
+    z-index: 1;
+    padding: var(--space-2xs) var(--space-s);
+    border-radius: var(--radius-s);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 600;
+  }
+
+  .site-nav__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2xs) var(--space-m);
+    padding-block: var(--space-xs);
+  }
+
+  .site-nav__logo {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tap-target);
+    font-family: var(--font-heading);
+    font-size: var(--step-1);
+    font-weight: 700;
+    text-decoration: none;
+
+    img {
+      // A site can size its logo with --navigation-logo-height.
+      block-size: var(--navigation-logo-height, var(--space-l));
+      inline-size: auto;
+    }
+
+    // With a dark-background version, only the one that suits the surface is shown
+    // (display: none also hides the other one from screen readers).
+    .site-nav__logo--on-light { display: var(--display-if-light); }
+    .site-nav__logo--on-dark { display: var(--display-if-dark); }
+  }
+
+  // ---------- Menu button (small screens only) ----------
+
+  .site-nav__toggle {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: var(--tap-target);
+    min-block-size: var(--tap-target);
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    // Without JavaScript there's nothing for it to do: the links are shown instead.
+    .site-nav:not([data-enhanced]) & { display: none; }
+  }
+
+  // Three lines that turn into a cross.
+  .site-nav__icon {
+    position: relative;
+    inline-size: var(--space-m);
+    block-size: var(--space-m);
+
+    > span {
+      position: absolute;
+      inset-inline: 10%;
+      block-size: 2px;
+      border-radius: 1px;
+      background-color: currentColor;
+      translate: 0 -50%;
+      transition:
+        inset-block-start var(--duration-fast) var(--ease-out),
+        rotate var(--duration-fast) var(--ease-out),
+        opacity var(--duration-fast) var(--ease-out);
+    }
+    > span:nth-child(1) { inset-block-start: 25%; }
+    > span:nth-child(2) { inset-block-start: 50%; }
+    > span:nth-child(3) { inset-block-start: 75%; }
+
+    [aria-expanded='true'] & {
+      > span:nth-child(1) { inset-block-start: 50%; rotate: 45deg; }
+      > span:nth-child(2) { opacity: 0; }
+      > span:nth-child(3) { inset-block-start: 50%; rotate: -45deg; }
+    }
+  }
+
+  // ---------- Links ----------
+
+  // Without JavaScript (and on small screens before it runs), the links sit on their own row.
+  .site-nav__menu {
+    flex-basis: 100%;
+  }
+
+  .site-nav__links {
+    list-style: none;
+    padding: 0;
+
+    li + li { border-block-start: 1px solid var(--color-border); }
+
+    a {
+      display: flex;
+      align-items: center;
+      min-block-size: var(--tap-target);
+      padding-block: var(--space-2xs);
+      font-size: var(--step-1);
+      text-decoration: none;
+      text-underline-offset: 0.25em;
+
+      &:hover { text-decoration-line: underline; }
+
+      &[aria-current='page'] {
+        font-weight: 700;
+        text-decoration-line: underline;
+        text-decoration-thickness: 2px;
+        text-decoration-color: var(--color-accent);
+      }
+    }
+  }
+
+  // Small screens: a panel that drops down under the bar, full width, with a subtle fade and slide.
+  .site-nav[data-enhanced] .site-nav__menu {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 100%;
+    padding-inline: var(--gutter);
+    background-color: var(--color-bg);
+    border-block: 1px solid var(--color-border);
+
+    // Closed: invisible, and (via visibility) out of the tab order and hidden from screen readers.
+    visibility: hidden;
+    opacity: 0;
+    translate: 0 calc(var(--space-xs) * -1);
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      translate var(--duration-base) var(--ease-out),
+      visibility 0s linear var(--duration-base);
+  }
+
+  .site-nav[data-enhanced][data-open] .site-nav__menu {
+    visibility: visible;
+    opacity: 1;
+    translate: none;
+    transition-delay: 0s;
+  }
+
+  // ---------- Wider screens: the links sit in the bar, no menu button ----------
+
+  @include mq(md) {
+    .site-nav__toggle,
+    .site-nav:not([data-enhanced]) .site-nav__toggle {
+      display: none;
+    }
+
+    .site-nav__menu,
+    .site-nav[data-enhanced] .site-nav__menu {
+      position: static;
+      flex-basis: auto;
+      padding-inline: 0;
+      background: none;
+      border: none;
+      visibility: visible;
+      opacity: 1;
+      translate: none;
+      transition: none;
+    }
+
+    .site-nav__links {
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: var(--space-m);
+
+      li + li { border: none; }
+
+      a { font-size: var(--step-0); }
+    }
+  }
+</style>
