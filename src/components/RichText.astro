@@ -11,7 +11,7 @@ interface Props {
 }
 
 const { section, cmsUrl } = Astro.props;
-const body = editorHtml(section.body, cmsUrl);
+const body = editorHtml(section.body, cmsUrl, Astro.site);
 ---
 
 <Section section={section} class="rich-text">

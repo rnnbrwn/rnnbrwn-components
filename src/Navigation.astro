@@ -51,7 +51,7 @@ const source =
 const links = source
   .filter((link) => !!link.url)
   .map((link) => {
-    let href = siteLink(link.url, cmsUrl);
+    let href = siteLink(link.url, cmsUrl, Astro.site);
     // "#contact" typed into a menu means that section of the home page, from any page.
     if (href.startsWith('#')) href = `/${href}`;
     const newTab = link.target === '_blank';

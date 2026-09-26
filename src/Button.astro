@@ -10,7 +10,7 @@ interface Props {
 }
 
 const { link, cmsUrl, variant = 'primary' } = Astro.props;
-const href = siteLink(link?.url, cmsUrl);
+const href = siteLink(link?.url, cmsUrl, Astro.site);
 const newTab = link?.target === '_blank';
 ---
 
