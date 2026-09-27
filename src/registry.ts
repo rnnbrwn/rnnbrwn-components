@@ -8,6 +8,7 @@ import Hero from './components/Hero.astro';
 import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
 import RichText from './components/RichText.astro';
+import Stats from './components/Stats.astro';
 import { BUTTONS_FIELDS, IMAGE_FIELDS as IMAGE, LINK_FIELDS as LINK } from './settings';
 
 export const components = {
@@ -27,6 +28,10 @@ export const components = {
   accordion: {
     component: Accordion,
     fields: `eyebrow heading intro accordionItems { title body } accordionButtons ${BUTTONS_FIELDS} opening firstOpen layout`,
+  },
+  stats: {
+    component: Stats,
+    fields: `eyebrow heading intro statsFigures { figure label text } statsButtons ${BUTTONS_FIELDS} figureColour alignment`,
   },
   buttons: { component: Buttons, fields: `buttonsButtons ${BUTTONS_FIELDS} alignment` },
   placeholder: { component: Placeholder, fields: 'heading note' },

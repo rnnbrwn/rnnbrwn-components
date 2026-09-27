@@ -2,7 +2,7 @@ import { BASE, SHOTS, check, wait, newPage, finish } from './lib.mjs';
 // The Example Site is a real-looking page (its first Hero is the <h1>), not one component's test versions.
 const EXAMPLE = 'Example Site';
 // Menu order; Buttons and Placeholder are parts, so they're sub-links of Parts (a dropdown on desktop).
-const expected = { Components: null, [EXAMPLE]: 'example-site', Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Parts: 'parts', Buttons: 'buttons', Placeholder: 'placeholder' };
+const expected = { Components: null, [EXAMPLE]: 'example-site', Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Stats: 'stats', Parts: 'parts', Buttons: 'buttons', Placeholder: 'placeholder' };
 const PARTS = 'Parts';
 const SUB_LINKS = ['Buttons', 'Placeholder'];
 for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 375, height: 800, isMobile: true, hasTouch: true }]]) {
@@ -40,7 +40,7 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
   if (label === 'desktop') {
     await p.goto(BASE + '/components/', { waitUntil: 'networkidle0' });
     const lists = await p.evaluate(() => [...document.querySelectorAll('.component-list')].map((ul) => [...ul.querySelectorAll('a')].map((a) => a.textContent.trim()).join(', ')));
-    check('overview lists sections and parts separately, with their numbers of test versions', lists[0] === 'Hero, Rich Text, Card Grid, Media Text, Accordion' && lists[1] === SUB_LINKS.join(', '), lists.join(' | '));
+    check('overview lists sections and parts separately, with their numbers of test versions', lists[0] === 'Hero, Rich Text, Card Grid, Media Text, Accordion, Stats' && lists[1] === SUB_LINKS.join(', '), lists.join(' | '));
     await p.goto(BASE + '/components/parts/', { waitUntil: 'networkidle0' });
     const parts = await p.evaluate(() => [...document.querySelectorAll('.component-list a')].map((a) => a.textContent.trim()).join(', '));
     check('the Parts page lists the parts', parts === SUB_LINKS.join(', '), parts);

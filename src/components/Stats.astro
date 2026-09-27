@@ -1,0 +1,233 @@
+---
+// Stats: an optional eyebrow, heading and intro, a row of up to four big figures (each a figure,
+// a label and an optional short text, e.g. "400+" / "Events covered"), then up to three buttons.
+// The editor picks the figures' colour (Brand or Text) and the alignment (Left or Centred).
+// WordPress half: rnnbrwn-base/sections/components/stats.php
+//
+// The figures share a row once the section is wide enough for all of them (measured with a
+// container query), so a row is never left part-filled: two side by side from sm (30rem), three
+// from md (40rem), four as two by two from sm and in one row from lg (50rem); stacked below that.
+// A thin rule sits in the gap between figures (drawn in the gap, so it never takes up room).
+// The figures are a list, figure first, so a screen reader hears "400+, Events covered". No
+// count-up animation: it needs JavaScript and reads out half-counted numbers.
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import { choice, type ButtonsField, type Choice, type SectionSettings } from '../settings';
+
+interface Figure {
+  figure: string | null;
+  label: string | null;
+  text: string | null;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    statsFigures: Figure[] | null;
+    statsButtons: ButtonsField;
+    figureColour: Choice;
+    alignment: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const figures = (section.statsFigures ?? []).filter((item) => item?.figure).slice(0, 4);
+const alignment = choice(section.alignment, 'left') === 'centre' ? 'centre' : 'left';
+const colour = choice(section.figureColour, 'brand') === 'text' ? 'text' : 'brand';
+---
+
+<Section
+  section={section}
+  class:list={['stats', `stats--${alignment}`, `stats--${colour}`, `stats--count-${figures.length}`]}
+>
+  <div class="stats__inner">
+    {(section.eyebrow || section.heading || section.intro) && (
+      <div class="stats__header">
+        {section.eyebrow && <p class="eyebrow stats__eyebrow">{section.eyebrow}</p>}
+        {section.heading && <h2 class="stats__heading">{section.heading}</h2>}
+        {section.intro && <p class="stats__intro">{section.intro}</p>}
+      </div>
+    )}
+
+    {figures.length > 0 && (
+      <ul class="stats__list" role="list">
+        {figures.map((item) => (
+          <li class="stats__item">
+            <p class="stats__figure">{item.figure}</p>
+            {item.label && <p class="stats__label">{item.label}</p>}
+            {item.text && <p class="stats__text">{item.text}</p>}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <ButtonRow buttons={section.statsButtons} cmsUrl={cmsUrl} align={alignment} class="stats__buttons" />
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the list
+  // measures to choose how many figures share a row.
+  .stats__inner {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5); // between the header, the figures and the buttons
+  }
+
+  .stats__inner > :global(.stats__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+
+  // ---------- Header ----------
+  .stats__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .stats__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .stats__intro {
+    font-size: var(--step-1);
+    max-inline-size: var(--measure);
+  }
+
+  .stats--centre .stats__header {
+    align-items: center;
+    text-align: center;
+  }
+
+  // ---------- The figures ----------
+  .stats__list {
+    --gap-x: var(--space-xl);
+    --gap-y: calc(var(--line) * 1.5);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gap-y) var(--gap-x);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .stats__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 4);
+    min-inline-size: 0;
+  }
+
+  .stats--centre .stats__item {
+    align-items: center;
+    text-align: center;
+  }
+
+  .stats__figure {
+    font-family: var(--font-heading);
+    font-size: var(--step-5);
+    font-weight: 700;
+    @include snap-leading(1.1);
+    font-variant-numeric: lining-nums;
+    overflow-wrap: anywhere; // a long figure in a narrow column wraps rather than overflowing
+    color: var(--color-brand);
+  }
+
+  .stats--text .stats__figure {
+    color: var(--color-text);
+  }
+
+  .stats__label {
+    font-weight: 600;
+  }
+
+  .stats__text {
+    color: var(--color-muted);
+    max-inline-size: var(--measure);
+  }
+
+  // ---------- Rules between figures ----------
+  // ::before is a rule above a figure (between rows), ::after one before it (between columns),
+  // each centred in the gap. Which figures get which depends on how many share a row.
+  .stats__item::before,
+  .stats__item::after {
+    content: '';
+    position: absolute;
+    display: none;
+    background-color: var(--color-border);
+  }
+
+  .stats__item::before {
+    inset-inline: 0;
+    inset-block-start: calc(var(--gap-y) / -2);
+    block-size: 1px;
+  }
+
+  .stats__item::after {
+    inset-block: 0;
+    inset-inline-start: calc(var(--gap-x) / -2);
+    inline-size: 1px;
+  }
+
+  // Stacked: a rule above every figure but the first.
+  .stats__item + .stats__item::before {
+    display: block;
+  }
+
+  // Two side by side: two figures, or four as two by two.
+  @include cq(sm) {
+    .stats--count-2 .stats__list,
+    .stats--count-4 .stats__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats--count-2 .stats__item::before,
+    .stats--count-4 .stats__item:nth-child(-n + 2)::before {
+      display: none;
+    }
+
+    .stats--count-2 .stats__item:nth-child(2)::after,
+    .stats--count-4 .stats__item:nth-child(even)::after {
+      display: block;
+    }
+  }
+
+  // Three in a row.
+  @include cq(md) {
+    .stats--count-3 .stats__list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stats--count-3 .stats__item::before {
+      display: none;
+    }
+
+    .stats--count-3 .stats__item + .stats__item::after {
+      display: block;
+    }
+  }
+
+  // Four in a row.
+  @include cq(lg) {
+    .stats--count-4 .stats__list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .stats--count-4 .stats__item::before {
+      display: none;
+    }
+
+    .stats--count-4 .stats__item + .stats__item::after {
+      display: block;
+    }
+  }
+</style>

@@ -28,14 +28,15 @@ $component_pages = [
 	'card_grid'   => $test_page( 'card-grid', 'Card Grid', $id, 3 ),
 	'media_text'  => $test_page( 'media-text', 'Media Text', $id, 4 ),
 	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 6 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 7 ),
+	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 7 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 8 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
 // parts sit under "Parts", a page of its own (/components/parts/) that lists them.
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 8 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 9 );
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -497,6 +498,36 @@ $sections_accordion = [
 	$accordion( '', [ 'eyebrow' => '', 'intro' => '', 'accordion_buttons' => [], 'accordion_items' => array_slice( $accordion_items, 0, 2 ) ] ),
 ];
 
+$stats_figure  = fn( $figure, $label, $text = '' ) => [ 'figure' => $figure, 'label' => $label, 'text' => $text ];
+$stats_figures = [
+	$stats_figure( '400+', 'Events covered', 'Festivals, fairs and shows across the region since 2009.' ),
+	$stats_figure( '24/7', 'On-site support', 'Someone on call from set-up to the last van leaving.' ),
+	$stats_figure( '98%', 'Clients who book again' ),
+	$stats_figure( '£2.5m+', 'A long figure, to check it fits', 'Eight characters is the most a figure can be.' ),
+];
+$stats = fn( $heading, $settings = [] ) => $section( 'stats', [
+	'eyebrow'       => 'In numbers',
+	'heading'       => $heading,
+	'intro'         => 'An optional intro under the heading, saying what the figures are.',
+	'stats_figures' => $stats_figures,
+	'stats_buttons' => [ $button( 'About us', 'outline' ) ],
+	'figure_colour' => 'brand',
+	'alignment'     => 'left',
+], $settings );
+
+$sections_stats = [
+	$stats( 'Stats: four figures, left, Brand colour', [ 'anchor' => 'stats' ] ),
+	$stats( 'Stats: three figures, centred', [ 'alignment' => 'centre', 'stats_figures' => array_slice( $stats_figures, 0, 3 ), 'stats_buttons' => [ $button( 'Get a quote', 'solid' ), $button( 'Our work', 'text' ) ] ] ),
+	$stats( 'Stats: two figures, Text colour', [ 'figure_colour' => 'text', 'stats_figures' => array_slice( $stats_figures, 0, 2 ) ] ),
+	$stats( 'Stats: one figure', [ 'stats_figures' => array_slice( $stats_figures, 1, 1 ), 'stats_buttons' => [] ] ),
+	$stats( 'Stats: four in a narrow section (two by two)', [ 'width' => 'narrow', 'background' => 'surface' ] ),
+	$stats( 'Stats: wide, on Brand, centred', [ 'width' => 'wide', 'background' => 'brand', 'alignment' => 'centre' ] ),
+	$stats( 'Stats: on Accent, Text colour', [ 'background' => 'accent', 'figure_colour' => 'text', 'stats_figures' => array_slice( $stats_figures, 0, 3 ) ] ),
+	$stats( 'Stats: full width on Black', [ 'width' => 'full', 'background' => 'black', 'stats_buttons' => [ $button( 'Main button', 'solid' ) ] ] ),
+	$stats( 'Stats: full width on Surface, wide content, centred', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'alignment' => 'centre' ] ),
+	$stats( '', [ 'eyebrow' => '', 'intro' => '', 'stats_buttons' => [], 'stats_figures' => array_map( fn( $f ) => array_merge( $f, [ 'text' => '' ] ), $stats_figures ) ] ),
+];
+
 $sections_placeholder = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
@@ -531,6 +562,7 @@ $rows = [
 	'card_grid'   => $sections_card_grid,
 	'media_text'  => $sections_media_text,
 	'accordion'   => $sections_accordion,
+	'stats'       => $sections_stats,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections_placeholder,
 ];
