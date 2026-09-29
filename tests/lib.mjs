@@ -8,7 +8,7 @@ export const BASE = process.env.BASE_URL || 'http://localhost:4500';
 export const SHOTS = new URL('./shots', import.meta.url).pathname;
 fs.mkdirSync(SHOTS, { recursive: true });
 
-// The test pages' preview switches (rnnbrwn.xyz's ComponentsLayout.astro): page backgrounds, and
+// The preview switches (rnnbrwn.xyz's ComponentsLayout.astro and PreviewLayout.astro): page backgrounds, and
 // themes ('' is the library default).
 export const BACKGROUNDS = ['white', 'surface', 'brand', 'accent', 'black'];
 export const THEMES = ['', 'forest', 'terracotta', 'harbour', 'plum', 'midnight', 'monochrome'];
@@ -23,8 +23,11 @@ export const info = (line) => results.push(`INFO  ${line}`);
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Click a preview switch on a test page: pick(p, 'background', 'black') or pick(p, 'theme', 'forest'). */
-export const pick = (p, kind, v) => p.evaluate((k, v) => document.querySelector(`[data-preview="${k}"][data-value="${v}"]`).click(), kind, v);
+/**
+ * Switch a preview page (/components/<name>/preview/) to another page background or theme, as the
+ * toolbar on its component page does: pick(p, 'background', 'black') or pick(p, 'theme', 'forest').
+ */
+export const pick = (p, kind, v) => p.evaluate((k, v) => window.preview[k](v), kind, v);
 
 // JavaScript errors and failed requests on pages made with newPage(), printed by finish().
 const errors = [];

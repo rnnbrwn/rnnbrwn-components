@@ -3,7 +3,7 @@
 // targets, landmarks and names, the current page, new tabs, site links, the logo for dark
 // backgrounds, no JavaScript needed, axe.
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/';
+const PAGE = BASE + '/components/footer/preview/';
 const p = await newPage();
 
 // The Single line layout (seeded with FOOTER_LAYOUT=line, see README.md) gets its own checks.
@@ -148,8 +148,8 @@ const s = await p.evaluate(() => {
 check('the footer is a page-level <footer> (a contentinfo landmark)', s.landmark);
 check('two navigation landmarks with their own names', s.navs.join(',') === 'Footer,Small print', s.navs.join(','));
 check('social links are named after their platform, icons hidden from screen readers', s.socialNames.every(Boolean) && s.iconsHidden, s.socialNames.join(', '));
-check('column headings are h2s; a # heading is text, not a link', s.headings.join(',') === 'Sections,Parts,Elsewhere' && s.hashLinks === 0, s.headings.join(','));
-check('the current page is marked in the footer', s.current.includes('/components/'), s.current.join(','));
+check('column headings are h2s; a # heading is text, not a link', s.headings.join(',') === 'Sections,Parts,Site,Elsewhere' && s.hashLinks === 0, s.headings.join(','));
+check('the current page is marked in the footer', s.current.includes('/components/footer/'), s.current.join(','));
 check('a new-tab link says so and has rel=noopener', s.newTab.length > 0 && s.newTab.every(([rel, note]) => rel.includes('noopener') && note));
 check('links to the CMS became site links', s.cmsLinks.length === 0, s.cmsLinks.join(' '));
 check('© line shows the year range, name and small print', new RegExp(`^© 2024–${new Date().getFullYear()} RNNBRWN Test pages, not indexed\\.$`).test(s.copyright), s.copyright);
@@ -174,12 +174,12 @@ await noJs.setViewport({ width: 1440, height: 900 });
 await noJs.goto(PAGE, { waitUntil: 'networkidle0' });
 check('without JavaScript the footer shows the same content', (await noJs.evaluate(() => document.querySelector('.site-footer').innerText)) === withJs);
 
-// On every other test page too.
+// Every page it links to exists.
 const pages = await p.evaluate(() => [...document.querySelectorAll('.site-footer__links a')].filter((a) => a.origin === location.origin).map((a) => a.href));
 const missing = [];
 for (const url of pages) {
-  await p.goto(url, { waitUntil: 'domcontentloaded' });
-  if (!(await p.$('.site-footer'))) missing.push(url);
+  const r = await p.goto(url, { waitUntil: 'domcontentloaded' });
+  if (!r.ok()) missing.push(`${r.status()} ${url}`);
 }
-check('every page linked from the footer has the footer', missing.length === 0 && pages.length > 0, missing.join(' ') || `${pages.length} pages`);
+check('every page linked from the footer exists', missing.length === 0 && pages.length > 0, missing.join(' ') || `${pages.length} pages`);
 await finish();

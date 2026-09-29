@@ -1,0 +1,303 @@
+---
+// Contact Bar: an optional eyebrow, heading and intro, a list of contact details, then up to three
+// buttons. Each detail is an email address, a phone number, an address or other text (e.g.
+// opening hours), with an optional label (email, telephone and address are labelled by type when
+// it's empty). The editor picks the layout: the heading above the details, which sit in a row
+// that wraps, or beside them once the section is at least lg (50rem) wide, with the buttons under
+// the heading and the details listed one under another. With the heading above, the Alignment
+// can be Centred: the header, the details as a group (each keeps its icon beside its text, left
+// aligned, so the icons don't drift from ragged lines) and the buttons.
+// WordPress half: rnnbrwn-base/sections/components/contact-bar.php
+//
+// Links are made from the type, so editors never type them: mailto: for email, tel: for a phone
+// number (only its digits and a leading +, and a "(0)" dropped after a country code), and an
+// optional Google Maps search for an address (a new tab, with ↗ and the new-tab note). The link
+// is stretched over the whole detail (icon and label too), so it's always a big tap target; its
+// text is the value itself, so a screen reader hears "Email, hello@example.com, link". Icons are
+// by type (none for Other), in the brand colour and hidden from screen readers.
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import ButtonIcon from '../ButtonIcon.astro';
+import NewTabNote from '../NewTabNote.astro';
+import { choice, type ButtonsField, type Choice, type SectionSettings } from '../settings';
+
+type DetailType = 'email' | 'phone' | 'address' | 'other';
+
+interface Detail {
+  type: Choice;
+  label: string | null;
+  email: string | null;
+  phone: string | null;
+  text: string | null;
+  mapLink: boolean | null;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    contactBarDetails: Detail[] | null;
+    contactBarButtons: ButtonsField;
+    layout: Choice;
+    alignment: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const LABELS: Record<DetailType, string> = { email: 'Email', phone: 'Telephone', address: 'Address', other: '' };
+
+// A tel: link: the digits and a leading +, without the "(0)" UK numbers often show after +44.
+const telHref = (phone: string) => {
+  const trimmed = phone.trim();
+  const international = trimmed.startsWith('+');
+  const digits = (international ? trimmed.replace(/\(0\)/g, '') : trimmed).replace(/\D/g, '');
+  return `tel:${international ? '+' : ''}${digits}`;
+};
+
+const lines = (text: string | null) =>
+  (text ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+const details = (section.contactBarDetails ?? [])
+  .map((item) => {
+    const raw = choice(item?.type, 'email');
+    const type: DetailType = raw === 'phone' || raw === 'address' || raw === 'other' ? raw : 'email';
+    const label = item.label?.trim() || LABELS[type];
+    if (type === 'email') {
+      const email = item.email?.trim();
+      return email ? { type, label, lines: [email], href: `mailto:${email}`, newTab: false } : null;
+    }
+    if (type === 'phone') {
+      const phone = item.phone?.trim();
+      return phone ? { type, label, lines: [phone], href: telHref(phone), newTab: false } : null;
+    }
+    const text = lines(item.text);
+    if (!text.length) return null;
+    const map = type === 'address' && item.mapLink;
+    const href = map ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text.join(', '))}` : null;
+    return { type, label, lines: text, href, newTab: Boolean(map) };
+  })
+  .filter((item) => item !== null)
+  .slice(0, 6);
+
+// Simple line icons on a 24px grid, drawn in the brand colour (stroke: currentColor).
+const ICONS: Record<DetailType, string | null> = {
+  email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/>',
+  phone:
+    '<path d="M5 4h3.5l1.5 4.5-2 1.5a11 11 0 0 0 6 6l1.5-2 4.5 1.5V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
+  address: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  other: null,
+};
+
+const hasHeader = Boolean(section.eyebrow || section.heading || section.intro);
+const hasButtons = (section.contactBarButtons ?? []).some((button) => button?.link?.url);
+// Beside needs something to put beside the details.
+const beside = choice(section.layout, 'row') === 'beside' && (hasHeader || hasButtons);
+// Centred only with the heading above (WordPress hides Alignment for Beside).
+const alignment = !beside && choice(section.alignment, 'left') === 'centre' ? 'centre' : 'left';
+---
+
+<Section section={section} class:list={['contact-bar', beside ? 'contact-bar--beside' : 'contact-bar--row', `contact-bar--${alignment}`]}>
+  <div class="contact-bar__inner">
+    <div class="contact-bar__grid">
+      {hasHeader && (
+        <div class="contact-bar__header">
+          {section.eyebrow && <p class="eyebrow contact-bar__eyebrow">{section.eyebrow}</p>}
+          {section.heading && <h2 class="contact-bar__heading">{section.heading}</h2>}
+          {section.intro && <p class="contact-bar__intro">{section.intro}</p>}
+        </div>
+      )}
+
+      {details.length > 0 && (
+        <ul class="contact-bar__list" role="list">
+          {details.map((item) => (
+            <li class:list={['contact-bar__item', `contact-bar__item--${item.type}`, { 'contact-bar__item--link': item.href }]}>
+              {ICONS[item.type] && (
+                <svg class="contact-bar__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" set:html={ICONS[item.type]} />
+              )}
+              <div class="contact-bar__text">
+                {item.label && <p class="contact-bar__label">{item.label}</p>}
+                <p class="contact-bar__value">
+                  {item.href ? (
+                    <a
+                      class="contact-bar__link"
+                      href={item.href}
+                      {...(item.newTab ? { target: '_blank', rel: 'noopener' } : {})}
+                    >
+                      {/* On one line: a line break between them would add an underlined space before the ↗. */}
+                      {item.lines.map((line, i) => <>{i > 0 && <br />}{line}</>)}{item.newTab && <ButtonIcon style="text" newTab={true} external={true} />}<NewTabNote show={item.newTab} />
+                    </a>
+                  ) : (
+                    item.lines.map((line, i) => <>{i > 0 && <br />}{line}</>)
+                  )}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ButtonRow buttons={section.contactBarButtons} cmsUrl={cmsUrl} align={alignment} class="contact-bar__buttons" />
+    </div>
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the layout
+  // measures to decide when details share a row and when the heading goes beside them.
+  .contact-bar__inner {
+    container-type: inline-size;
+  }
+
+  .contact-bar__grid {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5); // between the header, the details and the buttons
+  }
+
+  .contact-bar__grid > :global(.contact-bar__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+
+  // Beside: the header and buttons in a column on the left, a third of the width.
+  @include cq(lg) {
+    .contact-bar--beside .contact-bar__grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      grid-template-rows: auto 1fr; // extra height (from many details) goes below the buttons
+      gap: var(--line) var(--space-xl);
+      align-items: start;
+    }
+
+    .contact-bar--beside .contact-bar__header { grid-column: 1; grid-row: 1; }
+    .contact-bar--beside .contact-bar__grid > :global(.contact-bar__buttons) { grid-column: 1; grid-row: 2; }
+    .contact-bar--beside .contact-bar__list { grid-column: 2; grid-row: 1 / span 2; }
+  }
+
+  // ---------- Header ----------
+  .contact-bar__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .contact-bar__heading,
+  .contact-bar__intro {
+    max-inline-size: var(--measure);
+  }
+
+  .contact-bar--centre .contact-bar__header {
+    align-items: center;
+    text-align: center;
+  }
+
+  .contact-bar__intro {
+    font-size: var(--step-1);
+  }
+
+  // ---------- The details ----------
+  // One under another; in a row that wraps once the section is sm (30rem) wide (Row layout).
+  .contact-bar__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--line) var(--space-xl);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // Centred: the details as a group. One under another, the list shrinks to its widest detail and
+  // sits in the middle, so the icons stay in a straight line; in a row, each row is centred.
+  .contact-bar--centre .contact-bar__list {
+    align-self: center;
+    justify-content: center;
+  }
+
+  @include cq(sm) {
+    .contact-bar--row .contact-bar__list {
+      align-self: stretch;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start; // tops line up, whatever each detail's height (not centred up and down)
+    }
+  }
+
+  // The icon beside the label and value, lined up with the label's line.
+  .contact-bar__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-xs);
+    min-inline-size: 0;
+  }
+
+  .contact-bar__icon {
+    inline-size: var(--step-1);
+    block-size: var(--line);
+    color: var(--color-brand);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  // Other has no icon, so its text starts at the edge.
+  .contact-bar__item--other {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contact-bar__label {
+    color: var(--color-muted);
+    font-weight: 600;
+  }
+
+  .contact-bar__value {
+    font-size: var(--step-1);
+    font-weight: 600;
+    overflow-wrap: anywhere; // a long email address in a narrow column wraps rather than overflowing
+  }
+
+  // ---------- Links ----------
+  // The link is the value; its ::after stretches over the whole detail, so the icon and label
+  // can be tapped too and the target is always at least two lines tall.
+  .contact-bar__link {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: calc(var(--space-2xs) * -1);
+      border-radius: var(--radius-s);
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+    }
+
+    // Inline, so the ↗ follows the last line of the address instead of dropping below it.
+    :global(.button__icon) {
+      display: inline-block;
+      margin-inline-start: 0.25em;
+      vertical-align: -0.1em;
+    }
+  }
+
+  .contact-bar__item--link:hover .contact-bar__link {
+    color: var(--color-primary);
+    text-decoration-thickness: 2px;
+  }
+</style>

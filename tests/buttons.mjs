@@ -1,7 +1,7 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
 // Buttons (the Button component and the Buttons section). Run against a BUILT rnnbrwn.xyz
 // served locally; see README.md.
-const PAGE = BASE + '/components/buttons/';
+const PAGE = BASE + '/components/buttons/preview/';
 const p = await newPage();
 
 const geometry = () => p.evaluate(() => [...document.querySelectorAll('.buttons .button')].map((a) => {

@@ -1,5 +1,5 @@
-import { BASE, SHOTS, browser, check, wait, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/hero/';
+import { BASE, SHOTS, browser, check, wait, pick, axeCheck, finish } from './lib.mjs';
+const PAGE = BASE + '/components/navigation/preview/';
 const state = (p) => p.evaluate(() => {
   const btn = document.querySelector('.site-nav__toggle'), menu = document.querySelector('.site-nav__menu');
   const ms = getComputedStyle(menu), r = menu.getBoundingClientRect();
@@ -58,10 +58,10 @@ await p.tap('.site-nav__toggle'); await wait(400);
 s = await state(p);
 check('the close button closes and restores the page', s.expanded === 'false' && !s.inertMain && s.overflow !== 'hidden');
 await p.tap('.site-nav__toggle'); await wait(400);
-// A section in the middle of the page (the last one can't scroll to the top of the screen).
-await p.evaluate(() => { const a = document.querySelector('.site-nav__links a'); a.href = '/components/hero/#hero'; a.click(); }); await wait(600);
+// A section of this page ("On phones", with the Footer below it so it can scroll to the top of the screen).
+await p.evaluate(() => { const a = document.querySelector('.site-nav__links a'); a.href = location.pathname + '#on-phones'; a.click(); }); await wait(600);
 s = await state(p);
-const anchorTop = await p.evaluate(() => Math.round(document.getElementById('hero').getBoundingClientRect().top));
+const anchorTop = await p.evaluate(() => Math.round(document.getElementById('on-phones').getBoundingClientRect().top));
 check('following an in-page link closes the menu and scrolls to the section', s.expanded === 'false' && !s.inertMain && Math.abs(anchorTop) < 5, `section top ${anchorTop}px`);
 // opening when scrolled part-way
 await p.evaluate(() => window.scrollTo(0, 30)); await wait(100);
@@ -113,7 +113,7 @@ await p.close();
 p = await browser.newPage();
 await p.setViewport({ width: 375, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
-await p.evaluate(() => document.querySelector('[data-preview="background"][data-value="black"]').click());
+await pick(p, 'background', 'black');
 await p.click('.site-nav__toggle'); await wait(400);
 await axe(p, 'phone, menu open, dark page');
 await p.screenshot({ path: SHOTS + '/fs-open-dark.png' });
@@ -199,13 +199,14 @@ await p.close();
 // Current page inside a dropdown: the page's own link is aria-current; its parent is marked too.
 p = await browser.newPage();
 await p.setViewport({ width: 1280, height: 800 });
-await p.goto(BASE + '/components/buttons/', { waitUntil: 'networkidle0' });
+// The Navigation page is a sub-link of Site.
+await p.goto(PAGE, { waitUntil: 'networkidle0' });
 const cur = await p.evaluate(() => ({
   current: [...document.querySelectorAll('.site-nav [aria-current="page"]')].map((a) => a.textContent.trim()),
   within: [...document.querySelectorAll('.site-nav [data-current-within] > .site-nav__parent > a')].map((a) => a.textContent.trim()),
   weight: getComputedStyle(document.querySelector('.site-nav [data-current-within] > .site-nav__parent > a')).fontWeight,
 }));
-check('dropdown: on a sub-link\'s page, that link is current and its parent looks current', cur.current.join() === 'Buttons' && cur.within.join() === 'Parts' && cur.weight === '700', `current ${cur.current}, parent ${cur.within}`);
+check('dropdown: on a sub-link\'s page, that link is current and its parent looks current', cur.current.join() === 'Navigation' && cur.within.join() === 'Site' && cur.weight === '700', `current ${cur.current}, parent ${cur.within}`);
 await p.close();
 
 // Touch (a tablet: wide, no hover): the button opens and closes it; the parent link still goes to its page.

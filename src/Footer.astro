@@ -26,9 +26,14 @@ import type { FooterData, NavigationMenuItem } from './graphql';
 interface Props {
   data: FooterData;
   cmsUrl?: string;
+  /**
+   * The page's path, when it isn't the address it's built at (a preview of the page shown
+   * elsewhere): its link is marked as the current page. Real sites leave it out.
+   */
+  currentPath?: string;
 }
 
-const { data, cmsUrl } = Astro.props;
+const { data, cmsUrl, currentPath } = Astro.props;
 const footer = data.footerSettings?.footer;
 const siteTitle = data.generalSettings?.title ?? '';
 const width = choice(footer?.width, 'wide');
@@ -36,7 +41,7 @@ const logo = footer?.logo?.node;
 const logoDark = footer?.logoDark?.node;
 
 const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
-const here = trimSlash(Astro.url.pathname);
+const here = trimSlash(currentPath ?? Astro.url.pathname);
 
 const toLink = (link: NavigationMenuItem) => {
   // A menu item with the address # is only a column heading.

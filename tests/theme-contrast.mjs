@@ -7,7 +7,7 @@
 //   photo             text over the worst-case photo (pure white or black) under the background's tint
 import { BASE, BACKGROUNDS, THEMES, browser, newPage } from './lib.mjs';
 const p = await newPage({ errors: false });
-await p.goto(BASE + '/components/hero/', { waitUntil: 'networkidle0' });
+await p.goto(BASE + '/components/hero/preview/', { waitUntil: 'networkidle0' });
 const COLUMNS = ['text', 'muted', 'link', 'link:hover', 'button', 'btn:hover', 'brand', 'card', 'photo'];
 let failures = 0;
 for (const theme of THEMES) {

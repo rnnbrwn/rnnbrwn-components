@@ -17,7 +17,7 @@ const onGrid = (n, step) => Math.abs(n / step - Math.round(n / step)) * step < 0
 for (const w of [375, 1280]) {
   await p.setViewport({ width: w, height: 900 });
   for (const slug of PAGES) {
-    await p.goto(`${BASE}/components/${slug}/`, { waitUntil: 'networkidle0' });
+    await p.goto(`${BASE}/components/${slug}/preview/`, { waitUntil: 'networkidle0' });
     const line = await lineSize();
     const quarter = line / 4;
     const text = await p.evaluate(() => [...document.querySelectorAll('main :is(h1, h2, h3, h4, h5, h6, p, li, blockquote)')]
@@ -48,7 +48,7 @@ for (const w of [375, 1280]) {
 
 // Backgrounds never change the layout.
 await p.setViewport({ width: 1280, height: 900 });
-await p.goto(BASE + '/components/example-site/', { waitUntil: 'networkidle0' });
+await p.goto(BASE + '/components/example-site/preview/', { waitUntil: 'networkidle0' });
 const heights = [];
 for (const s of BACKGROUNDS) {
   await p.evaluate((s) => { document.body.className = document.body.className.replace(/\bbg-\S+/g, '').trim() + ` bg-${s}`; }, s);

@@ -1,5 +1,5 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/media-text/';
+const PAGE = BASE + '/components/media-text/preview/';
 const p = await newPage();
 
 // Every Media Text: its options (from its classes), and the image's and text's boxes.

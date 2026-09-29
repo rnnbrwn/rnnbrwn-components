@@ -2,7 +2,8 @@
 // Creates (or refreshes) the component test pages shown at rnnbrwn.xyz/components/:
 // a "Components" overview page, one child page per component (/components/hero/ ...) on the
 // Sections template holding test versions of that component, a "Parts" page listing the parts
-// (see $part_names), the test Navigation menu linking them, and the test Footer and its menus. Safe to re-run: it updates the pages instead of duplicating them.
+// (see $part_names), a "Site" page listing the Navigation and Footer test pages, the test Navigation
+// menu linking them, and the test Footer and its menus. Safe to re-run: it updates the pages instead of duplicating them.
 // When a component is added to the library, give it a page below and add its test rows.
 //
 // Run from platform/rnnbrwn-cms:
@@ -29,14 +30,23 @@ $component_pages = [
 	'media_text'  => $test_page( 'media-text', 'Media Text', $id, 4 ),
 	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
 	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 7 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 8 ),
+	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 7 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 8 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 9 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
 // parts sit under "Parts", a page of its own (/components/parts/) that lists them.
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 9 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 10 );
+// Site components (Navigation, Footer) are on every page of a real site and edited on their own
+// wp-admin pages, not added as sections. Each has a test page showing it around a little text,
+// under "Site" (/components/site/), which lists them as Parts lists the parts.
+$site_id    = $test_page( 'site', 'Site', $id, 11 );
+$site_pages = [
+	'navigation' => $test_page( 'navigation', 'Navigation', $id, 12 ),
+	'footer'     => $test_page( 'footer', 'Footer', $id, 13 ),
+];
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
 // as components are built. Unlike the test pages, the seed never changes it once it exists
@@ -139,6 +149,10 @@ $parts_item = $add_page( $parts_id );
 foreach ( $part_names as $name ) {
 	$add_page( $component_pages[ $name ], $parts_item );
 }
+$site_item = $add_page( $site_id );
+foreach ( $site_pages as $page_id ) {
+	$add_page( $page_id, $site_item );
+}
 set_theme_mod( 'nav_menu_locations', array_merge( (array) get_theme_mod( 'nav_menu_locations' ), [ 'main_navigation' => $menu_id ] ) );
 
 update_field( 'field_rs_navigation_source', 'menu', 'option' );
@@ -187,6 +201,7 @@ $test_menu( 'Footer (test)', 'footer_navigation', [
 	$example_id,
 	[ [ 'Sections', '#' ], $section_pages ],
 	[ $parts_id, array_map( fn( $name ) => $component_pages[ $name ], $part_names ) ],
+	[ $site_id, array_values( $site_pages ) ],
 	[ [ 'Elsewhere', '#' ], [ [ 'Library on GitHub', 'https://github.com/rnnbrwn/rnnbrwn-components', '_blank' ], [ 'ronnie.fyi', 'https://ronnie.fyi/' ] ] ],
 ] );
 $test_menu( 'Footer small print (test)', 'footer_small_print', [
@@ -199,7 +214,7 @@ update_field( 'field_rs_footer_layout', getenv( 'FOOTER_LAYOUT' ) === 'line' ? '
 update_field( 'field_rs_footer_show_copyright', 1, 'option' );
 update_field( 'field_rs_footer_logo', $logo_id, 'option' );
 update_field( 'field_rs_footer_logo_dark', $logo_dark_id, 'option' );
-update_field( 'field_rs_footer_text', 'Test content for the shared component library: the same footer is on every test page.', 'option' );
+update_field( 'field_rs_footer_text', 'Test content for the shared component library.', 'option' );
 update_field( 'field_rs_footer_footer_buttons', [ $button( 'Get in touch', 'outline' ) ], 'option' );
 update_field( 'field_rs_footer_footer_social', array_map( fn( $row ) => [ 'platform' => $row[0], 'url' => $row[1] ], [
 	[ 'bluesky', 'https://bsky.app/profile/ronnie.fyi' ],
@@ -528,6 +543,49 @@ $sections_stats = [
 	$stats( '', [ 'eyebrow' => '', 'intro' => '', 'stats_buttons' => [], 'stats_figures' => array_map( fn( $f ) => array_merge( $f, [ 'text' => '' ] ), $stats_figures ) ] ),
 ];
 
+$contact_detail  = fn( $type, $value, $label = '', $map_link = 0 ) => [
+	'type'     => $type,
+	'label'    => $label,
+	'email'    => 'email' === $type ? $value : '',
+	'phone'    => 'phone' === $type ? $value : '',
+	'text'     => in_array( $type, [ 'address', 'other' ], true ) ? $value : '',
+	'map_link' => $map_link,
+];
+$contact_details = [
+	$contact_detail( 'email', 'hello@example.com' ),
+	$contact_detail( 'phone', '+44 (0)141 555 0123' ),
+	$contact_detail( 'address', "12 Example Street\nGlasgow\nG1 1AA", '', 1 ),
+	$contact_detail( 'other', "Mon–Fri, 9am–5pm\nSat, 10am–2pm", 'Opening hours' ),
+];
+$contact_bar = fn( $heading, $settings = [] ) => $section( 'contact_bar', [
+	'eyebrow'             => 'Get in touch',
+	'heading'             => $heading,
+	'intro'               => 'An optional intro under the heading, e.g. how quickly you reply.',
+	'contact_bar_details' => $contact_details,
+	'contact_bar_buttons' => [ $button( 'Send a message', 'outline' ) ],
+	'layout'              => 'row',
+	'alignment'           => 'left',
+], $settings );
+
+$sections_contact_bar = [
+	$contact_bar( 'Contact Bar: every type, in a row', [ 'anchor' => 'contact-bar' ] ),
+	$contact_bar( 'Contact Bar: centred', [ 'alignment' => 'centre', 'contact_bar_details' => array_slice( $contact_details, 0, 3 ), 'contact_bar_buttons' => [ $button( 'Send a message', 'solid' ), $button( 'Find us', 'text' ) ] ] ),
+	$contact_bar( 'Contact Bar: heading beside the details', [ 'layout' => 'beside', 'width' => 'wide', 'intro' => 'On wider screens the heading, intro and buttons sit in a column on the left.', 'contact_bar_buttons' => [ $button( 'Book a call', 'solid' ), $button( 'Find us', 'text' ) ] ] ),
+	$contact_bar( 'Contact Bar: own labels, two numbers, no map link', [ 'contact_bar_details' => [
+		$contact_detail( 'phone', '0141 555 0123', 'Office' ),
+		$contact_detail( 'phone', '+44 7700 900123', 'Out of hours' ),
+		$contact_detail( 'email', 'a.very.long.email.address.to.check.it.wraps@example-company.co.uk', 'Sales' ),
+		$contact_detail( 'address', "Unit 4, Example Industrial Estate\nPaisley PA1 2BB" ),
+	], 'contact_bar_buttons' => [] ] ),
+	$contact_bar( 'Contact Bar: narrow, on Surface', [ 'width' => 'narrow', 'background' => 'surface' ] ),
+	$contact_bar( 'Contact Bar: on Brand', [ 'background' => 'brand', 'contact_bar_buttons' => [ $button( 'Main button', 'solid' ) ] ] ),
+	$contact_bar( 'Contact Bar: on Accent', [ 'background' => 'accent', 'eyebrow' => '' ] ),
+	$contact_bar( 'Contact Bar: full width on Surface, centred', [ 'width' => 'full', 'background' => 'surface', 'alignment' => 'centre' ] ),
+	$contact_bar( 'Contact Bar: beside, full width, on Black', [ 'layout' => 'beside', 'width' => 'full', 'background' => 'black', 'contact_bar_buttons' => [ $button( 'Main button', 'solid' ) ] ] ),
+	$contact_bar( 'Contact Bar: beside, but in a narrow section', [ 'layout' => 'beside', 'width' => 'narrow', 'intro' => 'Too narrow for two columns, so it stays stacked.' ] ),
+	$contact_bar( '', [ 'eyebrow' => '', 'intro' => '', 'contact_bar_buttons' => [], 'contact_bar_details' => array_slice( $contact_details, 0, 2 ) ] ),
+];
+
 $sections_placeholder = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
@@ -563,9 +621,28 @@ $rows = [
 	'media_text'  => $sections_media_text,
 	'accordion'   => $sections_accordion,
 	'stats'       => $sections_stats,
+	'contact_bar' => $sections_contact_bar,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections_placeholder,
 ];
+// The site components' pages: a little text for them to sit around (enough to scroll behind
+// Navigation's full-screen menu on phones).
+$site_text = '<p>Edited on its own page in wp-admin, not added as a section: it appears on every page of a real site. Switch it on in the site\'s <code>rnnbrwn_sections</code> filter.</p>
+
+<p>This page shows it around a little text, the way a real page would.</p>';
+$site_rows = [
+	'navigation' => [
+		$rich_text( 'Navigation', $site_text ),
+		$rich_text( 'On phones', '<p>Below the md breakpoint the links are behind a menu button that opens them full screen. The page behind is hidden, out of reach and doesn\'t scroll.</p>', [ 'background' => 'surface', 'anchor' => 'on-phones' ] ),
+	],
+	'footer'     => [
+		$rich_text( 'Footer', $site_text ),
+	],
+];
+foreach ( $site_rows as $name => $sections_for_page ) {
+	update_field( 'field_rs_sections', $sections_for_page, $site_pages[ $name ] );
+}
+
 foreach ( $rows as $name => $sections_for_page ) {
 	update_field( 'field_rs_sections', $sections_for_page, $component_pages[ $name ] );
 	WP_CLI::log( sprintf( '%s (page %d): %d sections', get_the_title( $component_pages[ $name ] ), $component_pages[ $name ], count( $sections_for_page ) ) );

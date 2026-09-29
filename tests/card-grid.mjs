@@ -1,5 +1,5 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/card-grid/';
+const PAGE = BASE + '/components/card-grid/preview/';
 const p = await newPage();
 
 // Every grid: its label (heading, or the first card's), columns used, and each card's box.

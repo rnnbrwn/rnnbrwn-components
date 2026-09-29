@@ -4,6 +4,7 @@
 import Accordion from './components/Accordion.astro';
 import Buttons from './components/Buttons.astro';
 import CardGrid from './components/CardGrid.astro';
+import ContactBar from './components/ContactBar.astro';
 import Hero from './components/Hero.astro';
 import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
@@ -32,6 +33,10 @@ export const components = {
   stats: {
     component: Stats,
     fields: `eyebrow heading intro statsFigures { figure label text } statsButtons ${BUTTONS_FIELDS} figureColour alignment`,
+  },
+  contact_bar: {
+    component: ContactBar,
+    fields: `eyebrow heading intro contactBarDetails { type label email phone text mapLink } contactBarButtons ${BUTTONS_FIELDS} layout alignment`,
   },
   buttons: { component: Buttons, fields: `buttonsButtons ${BUTTONS_FIELDS} alignment` },
   placeholder: { component: Placeholder, fields: 'heading note' },

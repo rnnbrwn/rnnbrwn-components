@@ -33,9 +33,14 @@ interface Props {
   mainId?: string;
   /** Label for the list of links, read out by screen readers. */
   label?: string;
+  /**
+   * The page's path, when it isn't the address it's built at (a preview of the page shown
+   * elsewhere): its link is marked as the current page. Real sites leave it out.
+   */
+  currentPath?: string;
 }
 
-const { data, cmsUrl, mainId = 'main', label = 'Main' } = Astro.props;
+const { data, cmsUrl, mainId = 'main', label = 'Main', currentPath } = Astro.props;
 const nav = data.navigationSettings?.navigation;
 const siteTitle = data.generalSettings?.title ?? '';
 const width = choice(nav?.width, 'wide');
@@ -44,7 +49,7 @@ const logoDark = nav?.logoDark?.node;
 const menuId = 'site-navigation-menu';
 
 const trimSlash = (path: string) => path.replace(/\/+$/, '') || '/';
-const here = trimSlash(Astro.url.pathname);
+const here = trimSlash(currentPath ?? Astro.url.pathname);
 
 const toLink = (link: NavigationMenuItem) => {
   if (!link.url) return null;
@@ -183,6 +188,8 @@ const items = links.flatMap((item, index) => {
         if (top < 0) window.scrollBy({ top, behavior: 'instant' });
         // The links start just below the bar.
         header.style.setProperty('--site-nav-bar-bottom', `${bar.getBoundingClientRect().bottom}px`);
+        // A menu too long for the screen scrolls; it opens at its first link again, not where it was left.
+        menu.scrollTop = 0;
       }
       button.setAttribute('aria-expanded', String(open));
       header.toggleAttribute('data-open', open);

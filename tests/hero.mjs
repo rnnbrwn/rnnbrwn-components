@@ -1,5 +1,5 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/hero/';
+const PAGE = BASE + '/components/hero/preview/';
 const p = await newPage();
 
 // Geometry of every hero: content box, media box, section box

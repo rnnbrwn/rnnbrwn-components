@@ -1,5 +1,5 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/accordion/';
+const PAGE = BASE + '/components/accordion/preview/';
 const p = await newPage();
 
 // Every Accordion: its layout (from its class), the boxes of its header, items and buttons, the

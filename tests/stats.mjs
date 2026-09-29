@@ -1,5 +1,5 @@
 import { BASE, SHOTS, BACKGROUNDS, THEMES, browser, check, info, wait, pick, newPage, axeCheck, finish } from './lib.mjs';
-const PAGE = BASE + '/components/stats/';
+const PAGE = BASE + '/components/stats/preview/';
 const p = await newPage();
 
 // Every Stats section: its settings (from its classes), the width it measures (rem), the boxes of
