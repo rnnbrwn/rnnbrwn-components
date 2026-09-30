@@ -1,0 +1,101 @@
+---
+// CTA Banner: a compact call to action. An optional eyebrow, a heading, an optional short text,
+// then one to three buttons. What sets it apart from a Hero is its size: the heading is a step
+// smaller than a section heading (still the section's h2), and in the Beside layout (the default)
+// the buttons sit to the right of the text once the section is at least lg (50rem) wide, measured
+// with a container query; narrower, they go under the text. Centred stacks everything, centred.
+// WordPress half: rnnbrwn-base/sections/components/cta-banner.php
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import { choice, type ButtonsField, type Choice, type SectionSettings } from '../settings';
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    ctaBannerButtons: ButtonsField;
+    layout: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const layout = choice(section.layout, 'beside') === 'centre' ? 'centre' : 'beside';
+---
+
+<Section section={section} class:list={['cta-banner', `cta-banner--${layout}`]}>
+  <div class="cta-banner__inner">
+    <div class="cta-banner__grid">
+      {(section.eyebrow || section.heading || section.intro) && (
+        <div class="cta-banner__header">
+          {section.eyebrow && <p class="eyebrow cta-banner__eyebrow">{section.eyebrow}</p>}
+          {section.heading && <h2 class="cta-banner__heading">{section.heading}</h2>}
+          {section.intro && <p class="cta-banner__intro">{section.intro}</p>}
+        </div>
+      )}
+
+      <ButtonRow
+        buttons={section.ctaBannerButtons}
+        cmsUrl={cmsUrl}
+        align={layout === 'centre' ? 'centre' : 'left'}
+        class="cta-banner__buttons"
+      />
+    </div>
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the layout
+  // measures to decide when the buttons go beside the text.
+  .cta-banner__inner {
+    container-type: inline-size;
+  }
+
+  .cta-banner__grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--line); // between the text and the buttons
+  }
+
+  // Beside: the text in the wider column, the buttons in the narrower one, pushed to the right
+  // (they wrap there, still right-aligned) and centred up and down against the text.
+  @include cq(lg) {
+    .cta-banner--beside .cta-banner__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: center;
+      gap: var(--line) var(--space-xl);
+    }
+
+    .cta-banner--beside .cta-banner__grid > :global(.cta-banner__buttons) {
+      justify-content: flex-end;
+    }
+  }
+
+  // ---------- Text ----------
+  .cta-banner__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  // A step smaller than a section heading, so the banner reads as a strip, not a new section.
+  .cta-banner__heading {
+    font-size: var(--step-3);
+  }
+
+  .cta-banner__heading,
+  .cta-banner__intro {
+    max-inline-size: var(--measure);
+  }
+
+  .cta-banner--centre .cta-banner__header {
+    align-items: center;
+    text-align: center;
+  }
+</style>

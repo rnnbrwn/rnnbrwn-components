@@ -1,8 +1,8 @@
 <?php
 // Creates (or refreshes) the component test pages shown at rnnbrwn.xyz/components/:
 // a "Components" overview page, one child page per component (/components/hero/ ...) on the
-// Sections template holding test versions of that component, a "Parts" page listing the parts
-// (see $part_names), a "Site" page listing the Navigation and Footer test pages, the test Navigation
+// Sections template holding test versions of that component, a "Sections" page listing the
+// sections, a "Parts" page listing the parts (see $part_names), a "Site" page listing the Navigation and Footer test pages, the test Navigation
 // menu linking them, and the test Footer and its menus. Safe to re-run: it updates the pages instead of duplicating them.
 // When a component is added to the library, give it a page below and add its test rows.
 //
@@ -31,21 +31,24 @@ $component_pages = [
 	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
 	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
 	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 7 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 8 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 9 ),
+	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 8 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 9 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 10 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
-// parts sit under "Parts", a page of its own (/components/parts/) that lists them.
+// sections sit under "Sections" and the parts under "Parts", each a page of its own
+// (/components/sections/, /components/parts/) that lists them.
+$sections_id = $test_page( 'sections', 'Sections', $id, 0 );
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 10 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 11 );
 // Site components (Navigation, Footer) are on every page of a real site and edited on their own
 // wp-admin pages, not added as sections. Each has a test page showing it around a little text,
 // under "Site" (/components/site/), which lists them as Parts lists the parts.
-$site_id    = $test_page( 'site', 'Site', $id, 11 );
+$site_id    = $test_page( 'site', 'Site', $id, 12 );
 $site_pages = [
-	'navigation' => $test_page( 'navigation', 'Navigation', $id, 12 ),
-	'footer'     => $test_page( 'footer', 'Footer', $id, 13 ),
+	'navigation' => $test_page( 'navigation', 'Navigation', $id, 13 ),
+	'footer'     => $test_page( 'footer', 'Footer', $id, 14 ),
 ];
 
 // The Example Site: a realistic page built from the components, which Ronnie adds to in wp-admin
@@ -136,13 +139,14 @@ $add_link = fn( $title, $url, $target = '' ) => wp_update_nav_menu_item( $menu_i
 	'menu-item-type'   => 'custom',
 	'menu-item-status' => 'publish',
 ] );
-// The overview, the Example Site, one link per section's page, then Parts with the parts'
-// pages as its sub-links (a dropdown on wider screens).
+// The overview, the Example Site, then Sections, Parts and Site, each with its pages as
+// sub-links (a dropdown on wider screens), so the bar stays one line however many there are.
 $add_page( $id );
 $add_page( $example_id );
+$sections_item = $add_page( $sections_id );
 foreach ( $component_pages as $name => $page_id ) {
 	if ( ! in_array( $name, $part_names, true ) ) {
-		$add_page( $page_id );
+		$add_page( $page_id, $sections_item );
 	}
 }
 $parts_item = $add_page( $parts_id );
@@ -586,6 +590,29 @@ $sections_contact_bar = [
 	$contact_bar( '', [ 'eyebrow' => '', 'intro' => '', 'contact_bar_buttons' => [], 'contact_bar_details' => array_slice( $contact_details, 0, 2 ) ] ),
 ];
 
+// ---------- CTA Banner: both layouts, one to three buttons, every background and width ----------
+$cta_banner = fn( $heading, $settings = [] ) => $section( 'cta_banner', [
+	'eyebrow'            => 'Ready to start?',
+	'heading'            => $heading,
+	'intro'              => 'An optional short text under the heading: a sentence or two about what happens next.',
+	'cta_banner_buttons' => [ $button( 'Get a quote', 'solid' ), $button( 'Our work', 'outline' ) ],
+	'layout'             => 'beside',
+], $settings );
+
+$sections_cta_banner = [
+	$cta_banner( 'CTA Banner: buttons beside the text', [ 'anchor' => 'cta-banner' ] ),
+	$cta_banner( 'CTA Banner: centred', [ 'layout' => 'centre' ] ),
+	$cta_banner( 'CTA Banner: one button, on Brand', [ 'background' => 'brand', 'cta_banner_buttons' => [ $button( 'Book a free consultation', 'solid' ) ] ] ),
+	$cta_banner( 'CTA Banner: three buttons, on Surface', [ 'background' => 'surface', 'cta_banner_buttons' => [ $button( 'Get a quote', 'solid' ), $button( 'Call us', 'outline' ), $button( 'See our work', 'text' ) ] ] ),
+	$cta_banner( 'CTA Banner: centred, on Accent', [ 'layout' => 'centre', 'background' => 'accent' ] ),
+	$cta_banner( 'CTA Banner: narrow, so the buttons go under the text', [ 'width' => 'narrow' ] ),
+	$cta_banner( 'CTA Banner: wide, on Black', [ 'width' => 'wide', 'background' => 'black' ] ),
+	$cta_banner( 'CTA Banner: full width on Brand, small spacing', [ 'width' => 'full', 'background' => 'brand', 'spacing' => 's' ] ),
+	$cta_banner( 'CTA Banner: full width on Surface, wide content, centred', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'layout' => 'centre' ] ),
+	$cta_banner( 'CTA Banner: a much longer heading, to check how it wraps beside the buttons', [ 'eyebrow' => '', 'intro' => 'And a longer short text too, to see the two columns side by side when the text runs to several lines on a wide screen.' ] ),
+	$cta_banner( 'Heading and a button only', [ 'eyebrow' => '', 'intro' => '', 'cta_banner_buttons' => [ $button( 'Contact us', 'solid' ) ] ] ),
+];
+
 $sections_placeholder = [
 	$placeholder( 'Width: narrow', [ 'width' => 'narrow' ] ),
 	$placeholder( 'Width: content', [ 'width' => 'content' ], 'The default width.' ),
@@ -614,6 +641,7 @@ $sections_placeholder = [
 // The overview and Parts have no sections of their own: the site lists the pages there.
 update_field( 'field_rs_sections', [], $id );
 update_field( 'field_rs_sections', [], $parts_id );
+update_field( 'field_rs_sections', [], $sections_id );
 $rows = [
 	'hero'        => $sections_hero,
 	'rich_text'   => $sections_rich_text,
@@ -622,6 +650,7 @@ $rows = [
 	'accordion'   => $sections_accordion,
 	'stats'       => $sections_stats,
 	'contact_bar' => $sections_contact_bar,
+	'cta_banner'  => $sections_cta_banner,
 	'buttons'     => $sections_buttons,
 	'placeholder' => $sections_placeholder,
 ];

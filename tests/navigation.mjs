@@ -120,23 +120,25 @@ await p.screenshot({ path: SHOTS + '/fs-open-dark.png' });
 await p.close();
 
 // ---- Sub-links: a dropdown on wider screens (the test menu's "Parts": Buttons, Placeholder) ----
-const sub = (p) => p.evaluate(() => {
-  const item = [...document.querySelectorAll('.site-nav__item')].find((li) => li.querySelector('.site-nav__sub'));
-  const btn = item.querySelector('.site-nav__sub-toggle'), list = item.querySelector('.site-nav__sub'), r = list.getBoundingClientRect();
+// Found by its link, since Sections comes first in the test menu (and a CSS selector works without JavaScript too).
+const PARTS = '.site-nav__item:has(> .site-nav__parent > a[href$="/components/parts/"])';
+const sub = (p) => p.evaluate((sel) => {
+  const item = document.querySelector(sel);
+  const btn = item.querySelector(".site-nav__sub-toggle"), list = item.querySelector('.site-nav__sub'), r = list.getBoundingClientRect();
   return { shown: getComputedStyle(list).visibility === 'visible', expanded: btn.getAttribute('aria-expanded'), btnShown: getComputedStyle(btn).display !== 'none',
     focus: document.activeElement?.textContent.trim() || document.activeElement?.tagName, right: Math.round(r.right), left: Math.round(r.left),
     parentLeft: Math.round(item.querySelector('a').getBoundingClientRect().left), subLinkLeft: Math.round(list.querySelector('a').getBoundingClientRect().left), mainTop: Math.round(document.querySelector('main').getBoundingClientRect().top) };
-});
+}, PARTS);
 const subCenter = (p, selector) => p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, selector);
 p = await browser.newPage();
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 let d = await sub(p);
-const names = await p.evaluate(() => { const btn = document.querySelector('.site-nav__sub-toggle'); return { name: btn.textContent.trim(), controls: !!document.getElementById(btn.getAttribute('aria-controls'))?.matches('.site-nav__sub') }; });
+const names = await p.evaluate((sel) => { const btn = document.querySelector(`${sel} .site-nav__sub-toggle`); return { name: btn.textContent.trim(), controls: !!document.getElementById(btn.getAttribute('aria-controls'))?.matches('.site-nav__sub') }; }, PARTS);
 check('dropdown: closed at first, its button is labelled and controls it', !d.shown && d.expanded === 'false' && d.btnShown && names.name === 'Parts menu' && names.controls, `"${names.name}"`);
 const mainTop = d.mainTop;
 // Keyboard: the parent link, then its button; Enter opens; Tab goes through the sub-links; tabbing out closes.
-await p.focus('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+await p.focus(`${PARTS} > .site-nav__parent > a`);
 let kseq = await tabs(p, 1);
 d = await sub(p);
 check('dropdown: closed sub-links are skipped by Tab (parent link → its button)', d.focus === 'Parts menu' && !d.shown, kseq.join(' → '));
@@ -150,25 +152,26 @@ d = await sub(p);
 check('dropdown: Tab goes through its links, then tabbing out closes it', kseq[0] === 'header:Buttons' && kseq[1] === 'header:Placeholder' && d.expanded === 'false' && !d.shown, kseq.join(' → '));
 // The accessibility scan moves focus (which closes a dropdown opened with its button), so it runs
 // with the dropdown held open by the pointer resting on it, and checks it was still open.
-await p.mouse.move(...(await subCenter(p, '.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a')));
-await p.mouse.move(...(await subCenter(p, '.site-nav__sub li:last-child a')), { steps: 8 }); await wait(300);
+await p.mouse.move(...(await subCenter(p, `${PARTS} > .site-nav__parent > a`)));
+await p.mouse.move(...(await subCenter(p, `${PARTS} .site-nav__sub li:last-child a`)), { steps: 8 }); await wait(300);
 await axe(p, 'desktop, dropdown open');
 check('dropdown: it was open for that scan', (await sub(p)).shown);
 // (Taking a screenshot loses the hover, so for the picture it's opened with its button.)
-await p.click('.site-nav__sub-toggle'); await wait(300);
-await p.screenshot({ path: SHOTS + '/dropdown-open.png', clip: { x: 0, y: 0, width: 1280, height: 260 } });
+await p.click(`${PARTS} .site-nav__sub-toggle`); await wait(300);
+// captureBeyondViewport: false, or the capture resizes the page and Navigation's resize handler closes the dropdown.
+await p.screenshot({ path: SHOTS + '/dropdown-open.png', clip: { x: 0, y: 0, width: 1280, height: 260 }, captureBeyondViewport: false });
 await p.keyboard.press('Escape');
 await p.mouse.move(400, 600); await wait(700);
-await p.focus('.site-nav__sub-toggle'); await p.keyboard.press('Enter'); await p.keyboard.press('Tab'); await wait(300);
+await p.focus(`${PARTS} .site-nav__sub-toggle`); await p.keyboard.press('Enter'); await p.keyboard.press('Tab'); await wait(300);
 await p.keyboard.press('Escape'); await wait(50);
 d = await sub(p);
 check('dropdown: Escape from a sub-link closes it, focus back on its button', d.expanded === 'false' && !d.shown && d.focus === 'Parts menu', `expanded ${d.expanded}, shown ${d.shown}, focus "${d.focus}"`);
 // Mouse: hovering opens it; a short grace after the pointer leaves; clicking elsewhere closes one opened by the button.
-const parentAt = await subCenter(p, '.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+const parentAt = await subCenter(p, `${PARTS} > .site-nav__parent > a`);
 await p.mouse.move(...parentAt); await wait(300);
 d = await sub(p);
 check('dropdown: hovering over the parent opens it (without changing aria-expanded)', d.shown && d.expanded === 'false');
-await p.mouse.move(...(await subCenter(p, '.site-nav__sub li:last-child a')), { steps: 8 }); await wait(100);
+await p.mouse.move(...(await subCenter(p, `${PARTS} .site-nav__sub li:last-child a`)), { steps: 8 }); await wait(100);
 check('dropdown: stays open while the pointer moves down into it', (await sub(p)).shown);
 await p.mouse.move(400, 600); await wait(100);
 const during = (await sub(p)).shown;
@@ -179,19 +182,19 @@ await p.keyboard.press('Escape'); await wait(50);
 const dismissed = !(await sub(p)).shown;
 await p.mouse.move(400, 600); await wait(100); await p.mouse.move(...parentAt); await wait(300);
 check('dropdown: Escape hides one shown by hovering; hovering again shows it', dismissed && (await sub(p)).shown);
-await p.click('.site-nav__sub-toggle'); await wait(300);
+await p.click(`${PARTS} .site-nav__sub-toggle`); await wait(300);
 const pinned = await sub(p);
 await p.mouse.move(400, 600); await wait(700);
 const pinnedAway = await sub(p);
-await p.click('.site-nav__sub-toggle'); await wait(50);
+await p.click(`${PARTS} .site-nav__sub-toggle`); await wait(50);
 d = await sub(p);
 check('dropdown: clicking its button keeps it open after the pointer leaves; clicking again closes it at once', pinned.expanded === 'true' && pinnedAway.shown && d.expanded === 'false' && !d.shown);
-await p.click('.site-nav__sub-toggle'); await wait(100);
+await p.click(`${PARTS} .site-nav__sub-toggle`); await wait(100);
 await p.mouse.click(400, 600); await wait(700);
 d = await sub(p);
 check('dropdown: clicking elsewhere closes it', d.expanded === 'false' && !d.shown);
 await p.setViewport({ width: 800, height: 800 }); await wait(700);
-await p.click('.site-nav__sub-toggle'); await wait(300);
+await p.click(`${PARTS} .site-nav__sub-toggle`); await wait(300);
 d = await sub(p);
 check('dropdown: stays on screen on a narrow desktop (800px)', d.shown && d.right <= 800 && d.left >= 0, `${d.left}–${d.right}px`);
 await p.close();
@@ -213,11 +216,11 @@ await p.close();
 p = await browser.newPage();
 await p.setViewport({ width: 1024, height: 768, isMobile: true, hasTouch: true });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
-await p.tap('.site-nav__sub-toggle'); await wait(300);
+await p.tap(`${PARTS} .site-nav__sub-toggle`); await wait(300);
 const tapOpen = (await sub(p)).shown;
-await p.tap('.site-nav__sub-toggle'); await wait(700);
+await p.tap(`${PARTS} .site-nav__sub-toggle`); await wait(700);
 check('dropdown: on a touch screen, tapping the button opens and closes it', tapOpen && !(await sub(p)).shown);
-await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.tap('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a')]);
+await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.tap(`${PARTS} > .site-nav__parent > a`)]);
 check('dropdown: tapping the parent link goes to its page', new URL(p.url()).pathname === '/components/parts/', new URL(p.url()).pathname);
 await p.close();
 
@@ -227,7 +230,7 @@ await p.setJavaScriptEnabled(false);
 await p.setViewport({ width: 1280, height: 800 });
 await p.goto(PAGE, { waitUntil: 'networkidle0' });
 d = await sub(p);
-await p.focus('.site-nav__item:has(.site-nav__sub) > .site-nav__parent > a');
+await p.focus(`${PARTS} > .site-nav__parent > a`);
 kseq = await tabs(p, 1);
 const nojs = await sub(p);
 check('dropdown, no JavaScript: no button; Tab from the parent opens it on its first link', !d.btnShown && !d.shown && nojs.shown && kseq[0] === 'header:Buttons', kseq.join(' → '));

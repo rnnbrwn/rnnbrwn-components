@@ -7,11 +7,11 @@ import { BASE, SHOTS, check, wait, newPage, axeCheck, finish } from './lib.mjs';
 // Sidebar order: the overview and Example Site, Foundations, Sections, Parts, Site.
 const PAGES = {
   Overview: '', 'Example Site': 'example-site', Tokens: 'tokens',
-  Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Stats: 'stats', 'Contact Bar': 'contact-bar',
+  Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Stats: 'stats', 'Contact Bar': 'contact-bar', 'CTA Banner': 'cta-banner',
   Buttons: 'buttons', Placeholder: 'placeholder',
   Navigation: 'navigation', Footer: 'footer',
 };
-const SECTIONS = ['Hero', 'Rich Text', 'Card Grid', 'Media Text', 'Accordion', 'Stats', 'Contact Bar'];
+const SECTIONS = ['Hero', 'Rich Text', 'Card Grid', 'Media Text', 'Accordion', 'Stats', 'Contact Bar', 'CTA Banner'];
 const PARTS = ['Buttons', 'Placeholder'];
 const SITE = ['Navigation', 'Footer'];
 
@@ -73,12 +73,12 @@ for (const [label, viewport] of [['desktop', { width: 1280, height: 800 }], ['ph
 const p = await newPage();
 await p.setViewport({ width: 1440, height: 900 });
 
-// The overview, Parts and Site pages list their pages.
+// The overview, Sections, Parts and Site pages list their pages.
 await p.goto(BASE + '/components/', { waitUntil: 'networkidle0' });
 const lists = await p.evaluate(() => [...document.querySelectorAll('.component-list')].map((ul) => [...ul.querySelectorAll('a')].map((a) => a.textContent.trim()).join(', ')));
 check('overview lists Foundations, Sections, Parts and Site', JSON.stringify(lists) === JSON.stringify(['Tokens', SECTIONS.join(', '), PARTS.join(', '), SITE.join(', ')]), lists.join(' | '));
 await p.screenshot({ path: SHOTS + '/overview-1440.png' });
-for (const [page, names] of [['parts', PARTS], ['site', SITE]]) {
+for (const [page, names] of [['sections', SECTIONS], ['parts', PARTS], ['site', SITE]]) {
   await p.goto(`${BASE}/components/${page}/`, { waitUntil: 'networkidle0' });
   const listed = await p.evaluate(() => [...document.querySelectorAll('.component-list a')].map((a) => a.textContent.trim()).join(', '));
   check(`the ${page} page lists its pages`, listed === names.join(', '), listed);
@@ -136,15 +136,15 @@ const closed = await p.evaluate(() => [document.querySelector('.docs-nav').hasAt
 check('phone: Escape closes the menu and returns to its button', !closed[0] && closed[1] === 'docs-menu-toggle', closed.join(', '));
 await p.close();
 
-// The test Navigation menu (in the previews that have it) lists every page; parts and site
-// components are sub-links of Parts and Site.
+// The test Navigation menu (in the previews that have it) lists every page; sections, parts and
+// site components are sub-links of Sections, Parts and Site.
 {
   const p = await newPage();
   await p.setViewport({ width: 1280, height: 800 });
   await p.goto(BASE + '/components/example-site/preview/', { waitUntil: 'networkidle0' });
   const menu = await p.evaluate(() => [...document.querySelectorAll('.site-nav__links a')].map((a) => a.textContent.trim()));
-  const want = ['Components', 'Example Site', ...SECTIONS, 'Parts', ...PARTS, 'Site', ...SITE];
-  check('the test Navigation menu lists every page (Parts and Site with sub-links)', JSON.stringify(menu) === JSON.stringify(want), menu.join(' · '));
+  const want = ['Components', 'Example Site', 'Sections', ...SECTIONS, 'Parts', ...PARTS, 'Site', ...SITE];
+  check('the test Navigation menu lists every page (Sections, Parts and Site with sub-links)', JSON.stringify(menu) === JSON.stringify(want), menu.join(' · '));
   await p.close();
 }
 
