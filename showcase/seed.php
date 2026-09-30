@@ -32,10 +32,11 @@ $component_pages = [
 	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
 	'testimonials' => $test_page( 'testimonials', 'Testimonials', $id, 7 ),
 	'logo_strip'  => $test_page( 'logo-strip', 'Logo Strip', $id, 8 ),
-	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 9 ),
-	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 10 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 11 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 12 ),
+	'gallery'     => $test_page( 'gallery', 'Gallery', $id, 9 ),
+	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 10 ),
+	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 11 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 12 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 13 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
@@ -43,7 +44,7 @@ $component_pages = [
 // (/components/sections/, /components/parts/) that lists them.
 $sections_id = $test_page( 'sections', 'Sections', $id, 0 );
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 13 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 14 );
 // Site components (Navigation, Footer) are on every page of a real site and edited on their own
 // wp-admin pages, not added as sections. Each has a test page showing it around a little text,
 // under "Site" (/components/site/), which lists them as Parts lists the parts.
@@ -694,6 +695,56 @@ $sections_logo_strip = [
 	$logo_strip( '', [ 'eyebrow' => '', 'intro' => '', 'alignment' => 'centre', 'logo_colour' => 'single' ] ),
 ];
 
+// ---------- Gallery ----------
+
+// Real photos where the Media Library has them (uploaded locally for testing, found by title),
+// then the test card images (wide, tall, square: cropped differently by each Image shape) and
+// the test pattern. Seven images, so rows of 2, 3 and 4 all leave the last row unfilled.
+// The test images get captions (only when they have none). The real photos usually have no alt
+// text or caption, which tests the links' fallback name ("Image 1 of 7").
+$gallery_photos = [];
+foreach ( [ 'eugene', 'jakub-zerdzicki-DUml2bEfLLg-unsplash', 'nathy-dog-z1uDmJx3ZEQ-unsplash' ] as $title ) {
+	$found = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'title' => $title, 'numberposts' => 1 ] );
+	if ( $found ) {
+		$gallery_photos[] = $found[0]->ID;
+	}
+}
+$gallery_captions = [
+	$card_images[0] => 'A wide test image (3:2), with a caption long enough to wrap onto a second line on a phone, to check it stays readable under the image.',
+	$card_images[1] => 'A tall test image: the grid crops it to the chosen shape, the lightbox shows it whole.',
+	$card_images[2] => 'A square test image.',
+	$photo_id       => 'The test pattern: pure white, pure black and bright colours.',
+];
+foreach ( $gallery_captions as $image => $caption ) {
+	if ( '' === get_post_field( 'post_excerpt', $image ) ) {
+		wp_update_post( [ 'ID' => $image, 'post_excerpt' => $caption ] );
+	}
+}
+$gallery_images = array_slice( array_merge( $gallery_photos, [ $card_images[0], $card_images[1], $card_images[2], $photo_id, $card_images[0], $card_images[1] ] ), 0, 7 );
+
+$gallery = fn( $heading, $settings = [] ) => $section( 'gallery', [
+	'eyebrow'         => 'Recent work',
+	'heading'         => $heading,
+	'intro'           => 'An optional intro under the heading. Click an image to see it large, with its caption.',
+	'gallery_images'  => $gallery_images,
+	'gallery_buttons' => [ $button( 'See all our work', 'outline' ) ],
+	'image_shape'     => 'landscape',
+	'columns'         => '3',
+	'alignment'       => 'left',
+], $settings );
+
+$sections_gallery = [
+	$gallery( 'Gallery: Landscape, 3 columns, left', [ 'anchor' => 'gallery' ] ),
+	$gallery( 'Gallery: Square, 4 columns, centred', [ 'image_shape' => 'square', 'columns' => '4', 'alignment' => 'centre' ] ),
+	$gallery( 'Gallery: Portrait, 2 columns, on Brand', [ 'image_shape' => 'portrait', 'columns' => '2', 'background' => 'brand' ] ),
+	$gallery( 'Gallery: Square, 3 columns, on Black, wide', [ 'image_shape' => 'square', 'background' => 'black', 'width' => 'wide' ] ),
+	$gallery( 'Gallery: 4 columns on Accent, centred', [ 'columns' => '4', 'background' => 'accent', 'alignment' => 'centre' ] ),
+	$gallery( 'Gallery: narrow, on Surface', [ 'width' => 'narrow', 'background' => 'surface', 'columns' => '4' ] ),
+	$gallery( 'Gallery: full width on Surface, wide content, 4 columns', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'columns' => '4', 'image_shape' => 'square' ] ),
+	$gallery( 'Gallery: one image (no Previous or Next)', [ 'eyebrow' => '', 'intro' => '', 'gallery_buttons' => [], 'gallery_images' => array_slice( $gallery_images, 0, 1 ) ] ),
+	$gallery( '', [ 'eyebrow' => '', 'intro' => '', 'gallery_buttons' => [], 'columns' => '4' ] ),
+];
+
 $contact_detail  = fn( $type, $value, $label = '', $map_link = 0 ) => [
 	'type'     => $type,
 	'label'    => $label,
@@ -798,6 +849,7 @@ $rows = [
 	'stats'       => $sections_stats,
 	'testimonials' => $sections_testimonials,
 	'logo_strip'  => $sections_logo_strip,
+	'gallery'     => $sections_gallery,
 	'contact_bar' => $sections_contact_bar,
 	'cta_banner'  => $sections_cta_banner,
 	'buttons'     => $sections_buttons,

@@ -1,0 +1,438 @@
+---
+// Gallery: an optional eyebrow, heading and intro, a grid of images, then up to three buttons.
+// Every image is cropped to the editor's Image shape (Landscape 3:2, Square or Portrait 4:5), from
+// the middle; the editor picks the most columns (2, 3 or 4, fewer when the space is narrower, two
+// on phones) and the alignment of the header and buttons (Left or Centred). An unfilled last row
+// is left as it is, so every image is the same size.
+// WordPress half: rnnbrwn-base/sections/components/gallery.php
+//
+// Each image is a link to the full image, so without JavaScript a click opens it. With
+// JavaScript, it opens in a lightbox instead: a native modal <dialog> (focus is kept inside it,
+// Escape closes it, and the page behind is inert), showing the whole image and its caption
+// (the Media Library caption), with Previous / Next (also the arrow keys and swiping), a count
+// ("3 of 12", announced) and Close. Closing returns focus to the image last shown.
+// Links are named by the image's alt text; an image without alt text is named by its caption,
+// or "Image 3 of 12", since a link always needs a name. Captions aren't shown in the grid.
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import Image from '../Image.astro';
+import { choice, laneSizes, type ButtonsField, type Choice, type SectionSettings, type WpImageNode } from '../settings';
+
+type GalleryImage = WpImageNode & { caption: string | null };
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    galleryImages: { nodes: GalleryImage[] } | null;
+    galleryButtons: ButtonsField;
+    imageShape: Choice;
+    columns: Choice;
+    alignment: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const SHAPES = ['landscape', 'square', 'portrait'];
+const shape = SHAPES.includes(choice(section.imageShape, 'landscape')) ? choice(section.imageShape, 'landscape') : 'landscape';
+const columns = Math.min(4, Math.max(2, Number(choice(section.columns, '3')) || 3));
+const alignment = choice(section.alignment, 'left') === 'centre' ? 'centre' : 'left';
+const images = (section.galleryImages?.nodes ?? []).filter((image) => image?.sourceUrl);
+
+// WordPress gives captions as HTML (<p>…</p>); the lightbox shows them as plain text.
+const plain = (html: string | null) =>
+  (html ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;/g, ' ')
+    .replace(/&#8217;|&rsquo;/g, '’')
+    .replace(/&#8216;|&lsquo;/g, '‘')
+    .replace(/&#8220;|&ldquo;/g, '“')
+    .replace(/&#8221;|&rdquo;/g, '”')
+    .replace(/&#8211;|&ndash;/g, '–')
+    .replace(/&#8212;|&mdash;/g, '—')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// A share of the section's lane, or half the screen on phones (two columns).
+const sizes = laneSizes(section, 1 / columns, '50vw');
+const name = section.heading || 'Gallery';
+---
+
+<Section
+  section={section}
+  class:list={['gallery', `gallery--${shape}`, `gallery--max-${columns}`, `gallery--${alignment}`]}
+  data-gallery
+>
+  <div class="gallery__inner">
+    {(section.eyebrow || section.heading || section.intro) && (
+      <div class="gallery__header">
+        {section.eyebrow && <p class="eyebrow gallery__eyebrow">{section.eyebrow}</p>}
+        {section.heading && <h2 class="gallery__heading">{section.heading}</h2>}
+        {section.intro && <p class="gallery__intro">{section.intro}</p>}
+      </div>
+    )}
+
+    {images.length > 0 && (
+      <ul class="gallery__grid" role="list">
+        {images.map((image, index) => {
+          const caption = plain(image.caption);
+          const alt = image.altText?.trim() || caption || `Image ${index + 1} of ${images.length}`;
+          return (
+            <li class="gallery__item">
+              <a
+                class="gallery__link"
+                href={image.sourceUrl}
+                data-caption={caption || undefined}
+                data-srcset={image.srcSet ?? undefined}
+                data-width={image.mediaDetails?.width}
+                data-height={image.mediaDetails?.height}
+              >
+                <Image class="gallery__image" image={image} sizes={sizes} alt={alt} />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+
+    <ButtonRow buttons={section.galleryButtons} cmsUrl={cmsUrl} align={alignment} class="gallery__buttons" />
+  </div>
+
+  {images.length > 0 && (
+    <dialog class="gallery__lightbox bg-black" aria-label={name}>
+      <div class="lightbox">
+        <p class="lightbox__count" aria-live="polite" hidden={images.length < 2}></p>
+        <button class="lightbox__button lightbox__close" type="button" autofocus>
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <span class="visually-hidden">Close</span>
+        </button>
+        <figure class="lightbox__figure">
+          <img class="lightbox__image" alt="" sizes="100vw" decoding="async" />
+          <figcaption class="lightbox__caption"></figcaption>
+        </figure>
+        {images.length > 1 && (
+          <>
+            <button class="lightbox__button lightbox__prev" type="button">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+              <span class="visually-hidden">Previous image</span>
+            </button>
+            <button class="lightbox__button lightbox__next" type="button">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
+              <span class="visually-hidden">Next image</span>
+            </button>
+          </>
+        )}
+      </div>
+    </dialog>
+  )}
+</Section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((gallery) => {
+    const dialog = gallery.querySelector<HTMLDialogElement>('.gallery__lightbox');
+    const links = [...gallery.querySelectorAll<HTMLAnchorElement>('.gallery__link')];
+    if (!dialog || !links.length || typeof dialog.showModal !== 'function') return;
+
+    const image = dialog.querySelector<HTMLImageElement>('.lightbox__image')!;
+    const caption = dialog.querySelector<HTMLElement>('.lightbox__caption')!;
+    const count = dialog.querySelector<HTMLElement>('.lightbox__count')!;
+    let current = 0;
+
+    const show = (index: number) => {
+      current = (index + links.length) % links.length;
+      const link = links[current];
+      const thumb = link.querySelector('img');
+      // Cleared first, so the last image doesn't linger while the next one loads.
+      image.removeAttribute('src');
+      image.srcset = link.dataset.srcset ?? '';
+      image.src = link.href;
+      if (link.dataset.width && link.dataset.height) {
+        image.width = Number(link.dataset.width);
+        image.height = Number(link.dataset.height);
+      }
+      image.alt = thumb?.alt ?? '';
+      caption.textContent = link.dataset.caption ?? '';
+      caption.hidden = !link.dataset.caption;
+      count.textContent = `${current + 1} of ${links.length}`;
+    };
+
+    links.forEach((link, index) => {
+      link.setAttribute('aria-haspopup', 'dialog');
+      link.addEventListener('click', (event) => {
+        // A new tab or window (Ctrl/Cmd/Shift/middle click) opens the image itself, as usual.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        show(index);
+        dialog.showModal();
+      });
+    });
+
+    dialog.querySelector('.lightbox__close')!.addEventListener('click', () => dialog.close());
+    dialog.querySelector('.lightbox__prev')?.addEventListener('click', () => show(current - 1));
+    dialog.querySelector('.lightbox__next')?.addEventListener('click', () => show(current + 1));
+
+    dialog.addEventListener('keydown', (event) => {
+      if (links.length < 2) return;
+      if (event.key === 'ArrowLeft') show(current - 1);
+      else if (event.key === 'ArrowRight') show(current + 1);
+      else return;
+      event.preventDefault();
+    });
+
+    // A click on the dark space around the image (not the image, caption or buttons) closes it.
+    dialog.addEventListener('click', (event) => {
+      const target = event.target as Element;
+      if (target === dialog || target.classList.contains('lightbox') || target.classList.contains('lightbox__figure')) {
+        dialog.close();
+      }
+    });
+
+    // Swiping sideways on a touch screen moves to the previous or next image.
+    let startX: number | null = null;
+    dialog.addEventListener('pointerdown', (event) => {
+      startX = event.pointerType === 'touch' ? event.clientX : null;
+    });
+    dialog.addEventListener('pointerup', (event) => {
+      if (startX === null || links.length < 2) return;
+      const moved = event.clientX - startX;
+      startX = null;
+      if (Math.abs(moved) > 50) show(moved < 0 ? current + 1 : current - 1);
+    });
+
+    // Back to the image last shown, which may not be the one that was clicked.
+    dialog.addEventListener('close', () => {
+      links[current].focus({ preventScroll: true });
+      links[current].scrollIntoView({ block: 'nearest' });
+    });
+  });
+</script>
+
+
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the grid
+  // measures to choose its number of columns.
+  .gallery__inner {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5); // between the header, the images and the buttons
+  }
+
+  // ---------- Header ----------
+  .gallery__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .gallery__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .gallery__intro {
+    font-size: var(--step-1);
+    max-inline-size: var(--measure);
+  }
+
+  .gallery--centre .gallery__header {
+    align-items: center;
+    text-align: center;
+  }
+
+  // ---------- The grid ----------
+  // Two columns on phones; up to the editor's number as the section gets wider.
+  .gallery__grid {
+    --cols: 2;
+
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: var(--space-s);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @include cq(sm) {
+    .gallery--max-3 .gallery__grid,
+    .gallery--max-4 .gallery__grid { --cols: 3; }
+  }
+
+  @include cq(md) {
+    .gallery--max-4 .gallery__grid { --cols: 4; }
+  }
+
+  .gallery__item {
+    max-inline-size: none;
+  }
+
+  .gallery__link {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--radius-s);
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  .gallery__image {
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    transition: scale var(--duration-base) var(--ease-out);
+  }
+
+  .gallery--square .gallery__image { aspect-ratio: 1; }
+  .gallery--portrait .gallery__image { aspect-ratio: 4 / 5; }
+
+  .gallery__link:hover .gallery__image {
+    scale: 1.04;
+  }
+
+  // ButtonRow's own element, so reached with :global().
+  .gallery__inner > :global(.gallery__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+
+  // ---------- Lightbox ----------
+  // The whole screen, always on the Black background (bg-black), whatever the page's.
+  .gallery__lightbox {
+    position: fixed;
+    inset: 0;
+    inline-size: 100%;
+    max-inline-size: none;
+    block-size: 100%;
+    max-block-size: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    opacity: 0;
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      overlay var(--duration-base) allow-discrete,
+      display var(--duration-base) allow-discrete;
+
+    &[open] {
+      opacity: 1;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+
+    &::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  // The page behind doesn't scroll while it's open.
+  :global(html:has(.gallery__lightbox[open])) {
+    overflow: hidden;
+  }
+
+  // Count and Close along the top; Previous and Next either side of the image; the caption below.
+  .lightbox {
+    display: grid;
+    grid-template:
+      'count  count  close' auto
+      'prev   figure next' 1fr
+      / auto 1fr auto;
+    align-items: center;
+    gap: var(--space-2xs);
+    block-size: 100%;
+    padding: var(--space-2xs);
+    // Sideways swipes are left to the script (next / previous); pinch-zoom still works.
+    touch-action: pan-y pinch-zoom;
+
+    @include mq(md) {
+      gap: var(--space-s);
+      padding: var(--space-s);
+    }
+  }
+
+  .lightbox__count {
+    grid-area: count;
+    margin: 0;
+    padding-inline: var(--space-2xs);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lightbox__close { grid-area: close; }
+  .lightbox__prev { grid-area: prev; }
+  .lightbox__next { grid-area: next; }
+
+  .lightbox__figure {
+    grid-area: figure;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--line) / 2);
+    block-size: 100%;
+    min-block-size: 0;
+    margin: 0;
+  }
+
+  // The whole image, as big as fits.
+  .lightbox__image {
+    flex: 0 1 auto;
+    min-block-size: 0;
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    inline-size: auto;
+    block-size: auto;
+    object-fit: contain;
+  }
+
+  .lightbox__caption {
+    flex: none;
+    max-inline-size: var(--measure);
+    text-align: center;
+  }
+
+  .lightbox__button {
+    display: grid;
+    place-items: center;
+    inline-size: var(--tap-target);
+    block-size: var(--tap-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+
+    svg {
+      inline-size: 1.5rem;
+      block-size: 1.5rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--color-text) 15%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+</style>

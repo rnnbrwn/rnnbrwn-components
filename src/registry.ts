@@ -6,6 +6,7 @@ import Buttons from './components/Buttons.astro';
 import CardGrid from './components/CardGrid.astro';
 import ContactBar from './components/ContactBar.astro';
 import CtaBanner from './components/CtaBanner.astro';
+import Gallery from './components/Gallery.astro';
 import Hero from './components/Hero.astro';
 import LogoStrip from './components/LogoStrip.astro';
 import MediaText from './components/MediaText.astro';
@@ -44,6 +45,10 @@ export const components = {
   logo_strip: {
     component: LogoStrip,
     fields: `eyebrow heading intro logoStripLogos { image ${IMAGE} name link ${LINK} } logoColour alignment`,
+  },
+  gallery: {
+    component: Gallery,
+    fields: `eyebrow heading intro galleryImages { nodes { sourceUrl srcSet altText caption mediaDetails { width height } } } galleryButtons ${BUTTONS_FIELDS} imageShape columns alignment`,
   },
   contact_bar: {
     component: ContactBar,

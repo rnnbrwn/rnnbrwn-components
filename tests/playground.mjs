@@ -4,13 +4,13 @@ import { BASE, SHOTS, check, wait, newPage, axeCheck, finish } from './lib.mjs';
 // shows exactly one; every choice of every setting shows the matching copy, and each looks
 // different; Keep in view and the shared Settings tab change the shown copy; a setting that
 // depends on another shows only with it; the View switch; axe.
-const PAGES = ['hero', 'rich-text', 'card-grid', 'media-text', 'accordion', 'stats', 'testimonials', 'logo-strip', 'contact-bar', 'cta-banner', 'buttons', 'placeholder'];
+const PAGES = ['hero', 'rich-text', 'card-grid', 'media-text', 'accordion', 'stats', 'testimonials', 'logo-strip', 'gallery', 'contact-bar', 'cta-banner', 'buttons', 'placeholder'];
 const p = await newPage();
 await p.setViewport({ width: 1440, height: 900 });
 
 // The shown copy: its index, how many show, and what it looks like (classes, open items, grouped items, focus points).
 const shown = () => p.evaluate(() => {
-  const copies = [...document.querySelector('[data-playground]').children];
+  const copies = [...document.querySelector('[data-playground]').children].filter((c) => c.tagName !== 'SCRIPT');
   const visible = copies.filter((c) => c.checkVisibility());
   const s = visible[0];
   return {

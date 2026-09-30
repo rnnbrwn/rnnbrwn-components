@@ -12,6 +12,7 @@
     "stats": "node stats.mjs",
     "testimonials": "node testimonials.mjs",
     "logo-strip": "node logo-strip.mjs",
+    "gallery": "node gallery.mjs",
     "contact-bar": "node contact-bar.mjs",
     "cta-banner": "node cta-banner.mjs",
     "buttons": "node buttons.mjs",
@@ -21,7 +22,7 @@
     "rhythm": "node rhythm.mjs",
     "tokens": "node tokens.mjs",
     "playground": "node playground.mjs",
-    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node accordion.mjs && node stats.mjs && node testimonials.mjs && node logo-strip.mjs && node contact-bar.mjs && node cta-banner.mjs && node buttons.mjs && node footer.mjs && node theme-contrast.mjs && node rhythm.mjs && node tokens.mjs && node playground.mjs"
+    "all": "node test-pages.mjs && node navigation.mjs && node hero.mjs && node card-grid.mjs && node media-text.mjs && node accordion.mjs && node stats.mjs && node testimonials.mjs && node logo-strip.mjs && node gallery.mjs && node contact-bar.mjs && node cta-banner.mjs && node buttons.mjs && node footer.mjs && node theme-contrast.mjs && node rhythm.mjs && node tokens.mjs && node playground.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",
