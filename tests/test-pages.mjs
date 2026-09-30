@@ -7,11 +7,11 @@ import { BASE, SHOTS, check, wait, newPage, axeCheck, finish } from './lib.mjs';
 // Sidebar order: the overview and Example Site, Foundations, Sections, Parts, Site.
 const PAGES = {
   Overview: '', 'Example Site': 'example-site', Tokens: 'tokens',
-  Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Stats: 'stats', Testimonials: 'testimonials', 'Contact Bar': 'contact-bar', 'CTA Banner': 'cta-banner',
+  Hero: 'hero', 'Rich Text': 'rich-text', 'Card Grid': 'card-grid', 'Media Text': 'media-text', Accordion: 'accordion', Stats: 'stats', Testimonials: 'testimonials', 'Logo Strip': 'logo-strip', 'Contact Bar': 'contact-bar', 'CTA Banner': 'cta-banner',
   Buttons: 'buttons', Placeholder: 'placeholder',
   Navigation: 'navigation', Footer: 'footer',
 };
-const SECTIONS = ['Hero', 'Rich Text', 'Card Grid', 'Media Text', 'Accordion', 'Stats', 'Testimonials', 'Contact Bar', 'CTA Banner'];
+const SECTIONS = ['Hero', 'Rich Text', 'Card Grid', 'Media Text', 'Accordion', 'Stats', 'Testimonials', 'Logo Strip', 'Contact Bar', 'CTA Banner'];
 const PARTS = ['Buttons', 'Placeholder'];
 const SITE = ['Navigation', 'Footer'];
 

@@ -7,6 +7,7 @@ import CardGrid from './components/CardGrid.astro';
 import ContactBar from './components/ContactBar.astro';
 import CtaBanner from './components/CtaBanner.astro';
 import Hero from './components/Hero.astro';
+import LogoStrip from './components/LogoStrip.astro';
 import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
 import RichText from './components/RichText.astro';
@@ -39,6 +40,10 @@ export const components = {
   testimonials: {
     component: Testimonials,
     fields: `eyebrow heading intro testimonialsQuotes { quote name role photo ${IMAGE} } testimonialsButtons ${BUTTONS_FIELDS} layout columns lastQuote quoteStyle alignment`,
+  },
+  logo_strip: {
+    component: LogoStrip,
+    fields: `eyebrow heading intro logoStripLogos { image ${IMAGE} name link ${LINK} } logoColour alignment`,
   },
   contact_bar: {
     component: ContactBar,

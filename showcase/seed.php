@@ -31,10 +31,11 @@ $component_pages = [
 	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
 	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
 	'testimonials' => $test_page( 'testimonials', 'Testimonials', $id, 7 ),
-	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 8 ),
-	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 9 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 10 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 11 ),
+	'logo_strip'  => $test_page( 'logo-strip', 'Logo Strip', $id, 8 ),
+	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 9 ),
+	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 10 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 11 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 12 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
@@ -42,7 +43,7 @@ $component_pages = [
 // (/components/sections/, /components/parts/) that lists them.
 $sections_id = $test_page( 'sections', 'Sections', $id, 0 );
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 12 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 13 );
 // Site components (Navigation, Footer) are on every page of a real site and edited on their own
 // wp-admin pages, not added as sections. Each has a test page showing it around a little text,
 // under "Site" (/components/site/), which lists them as Parts lists the parts.
@@ -592,6 +593,107 @@ $sections_testimonials = [
 	$testimonials( '', [ 'eyebrow' => '', 'intro' => '', 'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 2 ), 'testimonials_buttons' => [] ] ),
 ];
 
+// ---------- Logo Strip ----------
+// Test logos in different shapes, drawn here as a mark plus bars standing in for the lettering:
+// wide (4:1), square with a see-through hole, tall (2:3), very wide (8:1, capped at four times
+// the height), two colours, and a worst case on a white box (a JPG, so no transparency: Single
+// colour makes it a solid block). Made once, then reused.
+$logo_images = array_filter( (array) get_option( 'rs_test_logo_images', [] ), fn( $image ) => get_post( $image ) );
+if ( count( $logo_images ) < 6 ) {
+	$logo_images = [];
+	$logo_specs  = [
+		[ 'wide', 800, 200, 'png' ],
+		[ 'square', 400, 400, 'png' ],
+		[ 'tall', 400, 600, 'png' ],
+		[ 'very-wide', 1600, 200, 'png' ],
+		[ 'two-colour', 600, 200, 'png' ],
+		[ 'white-box', 600, 200, 'jpg' ],
+	];
+	foreach ( $logo_specs as [ $shape, $w, $h, $type ] ) {
+		$img = imagecreatetruecolor( $w, $h );
+		imagealphablending( $img, false );
+		imagesavealpha( $img, true );
+		imagefilledrectangle( $img, 0, 0, $w, $h, 'jpg' === $type ? imagecolorallocate( $img, 255, 255, 255 ) : imagecolorallocatealpha( $img, 0, 0, 0, 127 ) );
+		imagealphablending( $img, true );
+		$blue   = imagecolorallocate( $img, 59, 91, 219 );
+		$red    = imagecolorallocate( $img, 229, 0, 83 );
+		$yellow = imagecolorallocate( $img, 230, 170, 0 );
+		$green  = imagecolorallocate( $img, 20, 140, 90 );
+		$dark   = imagecolorallocate( $img, 30, 30, 40 );
+		$clear  = imagecolorallocatealpha( $img, 0, 0, 0, 127 );
+		// "Lettering": bars from $x to the right edge.
+		$bars = function ( $x, $y, $bar_h, $colour ) use ( $img, $w ) {
+			imagefilledrectangle( $img, $x, $y, $w - 20, $y + $bar_h, $colour );
+			imagefilledrectangle( $img, $x, $y + (int) ( $bar_h * 1.6 ), $x + (int) ( ( $w - 20 - $x ) * 0.6 ), $y + (int) ( $bar_h * 2.3 ), $colour );
+		};
+		switch ( $shape ) {
+			case 'wide':
+				imagefilledellipse( $img, 100, 100, 160, 160, $blue );
+				$bars( 210, 55, 40, $dark );
+				break;
+			case 'square':
+				imagefilledrectangle( $img, 20, 20, 380, 380, $red );
+				imagealphablending( $img, false );
+				imagefilledellipse( $img, 200, 200, 180, 180, $clear );
+				break;
+			case 'tall':
+				imagefilledpolygon( $img, [ 200, 20, 380, 380, 20, 380 ], $yellow );
+				imagefilledrectangle( $img, 40, 430, 360, 480, $dark );
+				imagefilledrectangle( $img, 90, 520, 310, 570, $dark );
+				break;
+			case 'very-wide':
+				$bars( 20, 50, 45, $dark );
+				break;
+			case 'two-colour':
+				imagefilledrectangle( $img, 20, 30, 160, 170, $green );
+				imagefilledellipse( $img, 130, 70, 90, 90, $blue );
+				$bars( 200, 55, 40, $green );
+				break;
+			case 'white-box':
+				imagefilledellipse( $img, 100, 100, 150, 150, $red );
+				$bars( 200, 55, 40, $dark );
+				break;
+		}
+		$file = wp_tempnam( "test-logo-{$shape}.{$type}" );
+		'jpg' === $type ? imagejpeg( $img, $file, 90 ) : imagepng( $img, $file );
+		$logo_images[ $shape ] = media_handle_sideload( [ 'name' => "test-logo-{$shape}.{$type}", 'tmp_name' => $file ], 0, "Test logo ({$shape})" );
+	}
+	update_option( 'rs_test_logo_images', $logo_images );
+}
+$logo_images = array_values( $logo_images );
+
+$logo  = fn( $i, $name, $link = '' ) => [ 'image' => $logo_images[ $i ], 'name' => $name, 'link' => $link ];
+$logos = [
+	$logo( 0, 'Wide logo (linked)', $link( '', '#logo-strip' ) ),
+	$logo( 1, 'Square logo with a see-through hole' ),
+	$logo( 2, 'Tall logo' ),
+	$logo( 3, 'Very wide logo (capped at four times its height)' ),
+	$logo( 4, 'Two-colour logo (another website, new tab)', $link( '', 'https://example.com', '_blank' ) ),
+	$logo( 0, 'Wide logo again' ),
+];
+$logo_strip = fn( $heading, $settings = [] ) => $section( 'logo_strip', [
+	'eyebrow'          => 'Trusted by',
+	'heading'          => $heading,
+	'intro'            => 'An optional intro under the heading, saying who these are.',
+	'logo_strip_logos' => $logos,
+	'logo_colour'      => 'original',
+	'alignment'        => 'left',
+], $settings );
+
+$sections_logo_strip = [
+	$logo_strip( 'Logo Strip: Original, left', [ 'anchor' => 'logo-strip' ] ),
+	$logo_strip( 'Logo Strip: Single colour, centred', [ 'logo_colour' => 'single', 'alignment' => 'centre' ] ),
+	$logo_strip( 'Logo Strip: Single colour on Brand', [ 'logo_colour' => 'single', 'background' => 'brand' ] ),
+	$logo_strip( 'Logo Strip: Original on Black (dark logos fade: use Single colour)', [ 'background' => 'black' ] ),
+	$logo_strip( 'Logo Strip: Single colour on Black, wide', [ 'logo_colour' => 'single', 'background' => 'black', 'width' => 'wide' ] ),
+	$logo_strip( 'Logo Strip: Single colour on Accent, centred', [ 'logo_colour' => 'single', 'background' => 'accent', 'alignment' => 'centre' ] ),
+	$logo_strip( 'Logo Strip: twelve logos, narrow, on Surface', [ 'width' => 'narrow', 'background' => 'surface', 'logo_strip_logos' => array_merge( $logos, $logos ) ] ),
+	$logo_strip( 'Logo Strip: full width on Surface, wide content, centred', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'alignment' => 'centre', 'logo_colour' => 'single' ] ),
+	$logo_strip( 'Logo Strip: three logos, centred', [ 'eyebrow' => '', 'intro' => '', 'alignment' => 'centre', 'logo_strip_logos' => array_slice( $logos, 0, 3 ) ] ),
+	$logo_strip( 'Logo Strip: a logo on a white box, in Single colour (worst case)', [ 'intro' => 'A JPG has no transparent background, so Single colour turns it into a solid block. Use a PNG with transparency.', 'logo_colour' => 'single', 'logo_strip_logos' => [ $logos[0], $logo( 5, 'Logo on a white box' ), $logos[2] ] ] ),
+	$logo_strip( '', [ 'eyebrow' => '', 'intro' => '', 'alignment' => 'centre', 'logo_colour' => 'single' ] ),
+];
+
 $contact_detail  = fn( $type, $value, $label = '', $map_link = 0 ) => [
 	'type'     => $type,
 	'label'    => $label,
@@ -695,6 +797,7 @@ $rows = [
 	'accordion'   => $sections_accordion,
 	'stats'       => $sections_stats,
 	'testimonials' => $sections_testimonials,
+	'logo_strip'  => $sections_logo_strip,
 	'contact_bar' => $sections_contact_bar,
 	'cta_banner'  => $sections_cta_banner,
 	'buttons'     => $sections_buttons,

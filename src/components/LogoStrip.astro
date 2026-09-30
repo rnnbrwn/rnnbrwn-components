@@ -1,0 +1,210 @@
+---
+// Logo Strip: an optional eyebrow, heading and intro, then up to twelve logos, each with an
+// optional link. The editor picks the logos' colour: Original, or Single colour (every logo in
+// the text colour, so mixed logos match and stay readable on every background), and the
+// alignment (Left or Centred).
+// WordPress half: rnnbrwn-base/sections/components/logo-strip.php
+//
+// Every logo is the same height, and never wider than four times that, whatever its shape; they
+// wrap onto new lines when there isn't room. Each is named by the editor's Name field (its alt
+// text, or the link's name), not the Media Library's alt text, which is often empty for logos.
+// Single colour repaints each logo in the text colour, keeping its shape, with an SVG filter
+// (flood the text colour, keep the logo's transparency), so it needs a transparent background;
+// in Windows' high-contrast mode it follows the system's text colour. Not a CSS mask: masks only
+// work on images from the site's own address or a server that allows it, and the logos come
+// from WordPress's.
+// A linked logo's link is at least a tap target tall.
+import Section from '../Section.astro';
+import NewTabNote from '../NewTabNote.astro';
+import { linkTarget } from '../html';
+import { choice, type Choice, type SectionSettings, type WpImage, type WpLink } from '../settings';
+
+interface Logo {
+  image: WpImage;
+  name: string | null;
+  link: WpLink;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    logoStripLogos: Logo[] | null;
+    logoColour: Choice;
+    alignment: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const single = choice(section.logoColour, 'original') === 'single';
+const alignment = choice(section.alignment, 'left') === 'centre' ? 'centre' : 'left';
+const logos = (section.logoStripLogos ?? []).filter((logo) => logo?.image?.node?.sourceUrl).slice(0, 12);
+
+// The Single colour filter, with an id of its own on every Logo Strip on the page.
+const filterId = `logo-strip-tint-${Math.random().toString(36).slice(2, 10)}`;
+
+// Width / height of the logo (3:1 when WordPress doesn't know, e.g. an SVG).
+const ratio = (logo: Logo) => {
+  const { width, height } = logo.image?.node.mediaDetails ?? {};
+  return width && height ? `${width} / ${height}` : '3';
+};
+---
+
+<Section
+  section={section}
+  class:list={['logo-strip', single && 'logo-strip--single', `logo-strip--${alignment}`]}
+>
+  <div class="logo-strip__inner" style={single ? `--tint: url(#${filterId})` : undefined}>
+    {single && (
+      <svg class="logo-strip__tint" aria-hidden="true" focusable="false" width="0" height="0">
+        <filter id={filterId} color-interpolation-filters="sRGB">
+          <feFlood flood-color="currentColor" />
+          <feComposite in2="SourceAlpha" operator="in" />
+        </filter>
+      </svg>
+    )}
+    {(section.eyebrow || section.heading || section.intro) && (
+      <div class="logo-strip__header">
+        {section.eyebrow && <p class="eyebrow logo-strip__eyebrow">{section.eyebrow}</p>}
+        {section.heading && <h2 class="logo-strip__heading">{section.heading}</h2>}
+        {section.intro && <p class="logo-strip__intro">{section.intro}</p>}
+      </div>
+    )}
+
+    {logos.length > 0 && (
+      <ul class="logo-strip__logos" role="list">
+        {logos.map((logo) => {
+          const image = logo.image!.node;
+          const name = logo.name ?? '';
+          const { href, newTab, attrs } = linkTarget(logo.link, cmsUrl, Astro.site);
+          const shown = (
+            <img
+              class="logo"
+              src={image.sourceUrl}
+              srcset={image.srcSet ?? undefined}
+              sizes="10rem"
+              width={image.mediaDetails?.width}
+              height={image.mediaDetails?.height}
+              alt={name}
+              loading="lazy"
+              decoding="async"
+              style={`--ratio: ${ratio(logo)}`}
+            />
+          );
+          return (
+            <li class="logo-strip__item">
+              {href ? (
+                <a class="logo-strip__link" {...attrs}>
+                  {shown}
+                  <NewTabNote show={newTab} />
+                </a>
+              ) : (
+                shown
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane.
+  .logo-strip__inner {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5); // between the header and the logos
+  }
+
+  // ---------- Header ----------
+  .logo-strip__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .logo-strip__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .logo-strip__intro {
+    font-size: var(--step-1);
+    max-inline-size: var(--measure);
+  }
+
+  .logo-strip--centre .logo-strip__header {
+    align-items: center;
+    text-align: center;
+  }
+
+  // ---------- The logos ----------
+  .logo-strip__logos {
+    --logo-height: var(--space-l);
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-m) var(--space-l);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .logo-strip--centre .logo-strip__logos {
+    justify-content: center;
+  }
+
+  .logo-strip__item {
+    display: flex;
+    max-inline-size: none;
+  }
+
+  // The same height for every logo; its own width, up to four times the height.
+  .logo {
+    display: block;
+    flex: none;
+    block-size: var(--logo-height);
+    inline-size: min(calc(var(--logo-height) * var(--ratio)), calc(var(--logo-height) * 4));
+    object-fit: contain;
+  }
+
+  // Single colour: the filter floods the text colour (its currentColor) into the logo's shape.
+  .logo-strip__tint {
+    position: absolute;
+    color: var(--color-text);
+
+    @media (forced-colors: active) {
+      color: CanvasText;
+    }
+  }
+
+  .logo-strip--single .logo {
+    filter: var(--tint);
+  }
+
+  // ---------- Links ----------
+  // At least a tap target tall; a small lift on hover, like the buttons.
+  .logo-strip__link {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--tap-target);
+    transition: translate var(--duration-fast) var(--ease-out);
+
+    &:hover {
+      translate: 0 calc(var(--space-3xs) * -1);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: var(--space-3xs);
+      border-radius: var(--radius-s);
+    }
+  }
+</style>
