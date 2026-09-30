@@ -1,0 +1,287 @@
+---
+// Testimonials: an optional eyebrow, heading and intro, up to six quotes, then up to three
+// buttons. Each quote is the quote itself, the person's name, their role or company and an
+// optional small round photo. The editor picks the layout: Grid (up to 2 or 3 side by side,
+// fewer when the space is narrower, one on phones, with "Last quote" like Card Grid's "Last
+// card") or Large (each quote big, one under another); the quote look: Panel (filled, rounded)
+// or Plain; and the alignment (Left or Centred).
+// WordPress half: rnnbrwn-base/sections/components/testimonials.php
+//
+// Each quote is a <figure>: the words in a <blockquote>, the person in its <figcaption>, so
+// screen readers keep them together. The opening quote mark is decorative CSS (with empty alt
+// text), so editors never type one. The photo is decorative too: the name is right beside it.
+// Quotes aren't headings. A Panel's fill is only painted, reaching out around the quote like
+// Card Grid's, so Panel and Plain quotes are exactly the same size.
+import Section from '../Section.astro';
+import ButtonRow from '../ButtonRow.astro';
+import Image from '../Image.astro';
+import { choice, type ButtonsField, type Choice, type SectionSettings, type WpImage } from '../settings';
+
+interface Quote {
+  quote: string | null;
+  name: string | null;
+  role: string | null;
+  photo: WpImage;
+}
+
+interface Props {
+  section: SectionSettings & {
+    eyebrow: string | null;
+    heading: string | null;
+    intro: string | null;
+    testimonialsQuotes: Quote[] | null;
+    testimonialsButtons: ButtonsField;
+    layout: Choice;
+    columns: Choice;
+    lastQuote: Choice;
+    quoteStyle: Choice;
+    alignment: Choice;
+  };
+  cmsUrl?: string;
+}
+
+const { section, cmsUrl } = Astro.props;
+
+const layout = choice(section.layout, 'grid') === 'large' ? 'large' : 'grid';
+const columns = choice(section.columns, '3') === '2' ? 2 : 3;
+const fill = layout === 'grid' && choice(section.lastQuote, 'column') === 'fill';
+const look = choice(section.quoteStyle, 'panel') === 'plain' ? 'plain' : 'panel';
+const alignment = choice(section.alignment, 'left') === 'centre' ? 'centre' : 'left';
+const quotes = (section.testimonialsQuotes ?? []).filter((item) => item?.quote?.trim()).slice(0, 6);
+
+// A line break in the quote starts a new paragraph.
+const paragraphs = (text: string) => text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+---
+
+<Section
+  section={section}
+  class:list={[
+    'testimonials',
+    `testimonials--${layout}`,
+    `testimonials--max-${columns}`,
+    fill && 'testimonials--fill',
+    `testimonials--${look}`,
+    `testimonials--${alignment}`,
+  ]}
+>
+  <div class="testimonials__inner">
+    {(section.eyebrow || section.heading || section.intro) && (
+      <div class="testimonials__header">
+        {section.eyebrow && <p class="eyebrow testimonials__eyebrow">{section.eyebrow}</p>}
+        {section.heading && <h2 class="testimonials__heading">{section.heading}</h2>}
+        {section.intro && <p class="testimonials__intro">{section.intro}</p>}
+      </div>
+    )}
+
+    {quotes.length > 0 && (
+      <ul class="testimonials__quotes" role="list">
+        {quotes.map((item) => {
+          const photo = item.photo?.node;
+          return (
+            <li class="quote">
+              <figure class="quote__figure">
+                <blockquote class="quote__text">
+                  {paragraphs(item.quote ?? '').map((line) => <p>{line}</p>)}
+                </blockquote>
+                {(item.name || photo) && (
+                  <figcaption class="quote__by">
+                    {photo && <Image class="quote__photo" image={photo} alt="" sizes="5rem" />}
+                    <span class="quote__person">
+                      {item.name && <span class="quote__name">{item.name}</span>}
+                      {item.role && <span class="quote__role">{item.role}</span>}
+                    </span>
+                  </figcaption>
+                )}
+              </figure>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+
+    <ButtonRow buttons={section.testimonialsButtons} cmsUrl={cmsUrl} align={alignment} class="testimonials__buttons" />
+  </div>
+</Section>
+
+<style lang="scss">
+  @use 'sass:list';
+  @use 'sass:map';
+  @use 'tools' as *;
+
+  // On an inner wrapper, not the section: a full-width section is a subgrid of the page grid,
+  // and a gap set on it would squeeze the content lane. It's also the container the grid
+  // measures to choose its number of columns.
+  .testimonials__inner {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) * 1.5); // between the header, the quotes and the buttons
+  }
+
+  .testimonials__inner > :global(.testimonials__buttons) {
+    margin-block-start: var(--space-2xs);
+  }
+
+  // ---------- Header ----------
+  .testimonials__header {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+  }
+
+  .testimonials__heading {
+    max-inline-size: var(--measure);
+  }
+
+  .testimonials__intro {
+    font-size: var(--step-1);
+    max-inline-size: var(--measure);
+  }
+
+  .testimonials--centre .testimonials__header {
+    align-items: center;
+    text-align: center;
+  }
+
+  // ---------- The quotes ----------
+  // Grid: up to the editor's number of columns (testimonials--max-2|3); a column is dropped
+  // whenever quotes would get narrower than $card-min, down to one. Worked out here, like Card
+  // Grid, so the CSS always knows how many columns there are and the last quote can fill
+  // exactly the rest of its row. The gap leaves room for Panel fills, which reach out by
+  // --quote-pad. Large: one quote under another.
+  $quote-gap-max: list.nth(map.get(space-scale(), 'xl'), 2);
+  @function fits($n) {
+    @return $n * $card-min + ($n - 1) * $quote-gap-max;
+  }
+
+  .testimonials__quotes {
+    --quote-pad: var(--space-s);
+    --quote-gap: var(--space-xl);
+    --cols: 1;
+
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: var(--quote-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @for $max from 2 through 3 {
+    @for $n from 2 through $max {
+      @include cq(fits($n)) {
+        .testimonials--grid.testimonials--max-#{$max} .testimonials__quotes { --cols: #{$n}; }
+
+        // Last quote: fill the rest of its row. It's in column $c when its position is $c
+        // more than a multiple of $n, and then spans the $n - $c + 1 columns left. First undo
+        // the rule for fewer columns (narrower containers' rules still match here), with the
+        // same specificity so it wins by coming later.
+        .testimonials--fill.testimonials--max-#{$max} .quote:last-child:nth-child(n) {
+          grid-column: auto;
+        }
+        @for $c from 1 through $n - 1 {
+          .testimonials--fill.testimonials--max-#{$max} .quote:last-child:nth-child(#{$n}n + #{$c}) {
+            grid-column: span #{$n - $c + 1};
+          }
+        }
+      }
+    }
+  }
+
+  // ---------- A quote ----------
+  .quote {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    max-inline-size: none;
+  }
+
+  .quote__figure {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+    min-inline-size: 0;
+    margin: 0;
+  }
+
+  .testimonials--centre .quote__figure {
+    align-items: center;
+    text-align: center;
+  }
+
+  .quote__text {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--line) / 2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    // The opening quote mark: decorative, so its alt text is empty. It takes one line, whatever
+    // its size, and the glyph sits at the top of it.
+    &::before {
+      content: '\201C' / '';
+      display: block;
+      block-size: var(--line);
+      font-family: var(--font-heading);
+      font-size: var(--step-5);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--color-brand);
+    }
+  }
+
+  // The person: pushed to the bottom, so names line up across a row of quotes.
+  .quote__by {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+    margin-block-start: auto;
+    padding-block-start: calc(var(--line) / 2);
+  }
+
+  .quote__photo {
+    flex: none;
+    inline-size: var(--space-xl);
+    block-size: var(--space-xl);
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  // Left-aligned beside the photo even when Centred: the photo and name are centred as a group.
+  .quote__person {
+    display: flex;
+    flex-direction: column;
+    text-align: start;
+  }
+
+  .quote__name {
+    font-weight: 600;
+  }
+
+  .quote__role {
+    color: var(--color-muted);
+    font-size: var(--step--1);
+  }
+
+  // ---------- Large ----------
+  .testimonials--large .quote__text {
+    font-size: var(--step-2);
+  }
+
+  .testimonials--large .quote__photo {
+    inline-size: var(--space-2xl);
+    block-size: var(--space-2xl);
+  }
+
+  // Panel: the fill is painted behind the quote, reaching out by --quote-pad, never laid out.
+  .testimonials--panel .quote::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: calc(var(--quote-pad) * -1);
+    border-radius: var(--radius-l);
+    background-color: var(--color-card);
+  }
+</style>

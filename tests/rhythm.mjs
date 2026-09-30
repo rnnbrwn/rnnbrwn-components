@@ -1,7 +1,7 @@
 // Vertical rhythm: text on a quarter-line grid of --line (scss/base/_base.scss, snap-leading()),
 // and text spaced in lines (editor text in scss/base/_prose.scss; components in their own styles).
 import { BASE, SHOTS, BACKGROUNDS, check, info, wait, newPage, finish } from './lib.mjs';
-const PAGES = ['example-site', 'hero', 'rich-text', 'card-grid', 'media-text'];
+const PAGES = ['example-site', 'hero', 'rich-text', 'card-grid', 'media-text', 'testimonials'];
 const p = await newPage();
 
 // One line of body text (--line) and a quarter of it, in px, measured with a probe element.

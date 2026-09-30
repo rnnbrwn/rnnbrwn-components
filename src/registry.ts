@@ -11,6 +11,7 @@ import MediaText from './components/MediaText.astro';
 import Placeholder from './components/Placeholder.astro';
 import RichText from './components/RichText.astro';
 import Stats from './components/Stats.astro';
+import Testimonials from './components/Testimonials.astro';
 import { BUTTONS_FIELDS, IMAGE_FIELDS as IMAGE, LINK_FIELDS as LINK } from './settings';
 
 export const components = {
@@ -34,6 +35,10 @@ export const components = {
   stats: {
     component: Stats,
     fields: `eyebrow heading intro statsFigures { figure label text } statsButtons ${BUTTONS_FIELDS} figureColour alignment`,
+  },
+  testimonials: {
+    component: Testimonials,
+    fields: `eyebrow heading intro testimonialsQuotes { quote name role photo ${IMAGE} } testimonialsButtons ${BUTTONS_FIELDS} layout columns lastQuote quoteStyle alignment`,
   },
   contact_bar: {
     component: ContactBar,

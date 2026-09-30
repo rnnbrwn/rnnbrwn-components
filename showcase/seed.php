@@ -30,10 +30,11 @@ $component_pages = [
 	'media_text'  => $test_page( 'media-text', 'Media Text', $id, 4 ),
 	'accordion'   => $test_page( 'accordion', 'Accordion', $id, 5 ),
 	'stats'       => $test_page( 'stats', 'Stats', $id, 6 ),
-	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 7 ),
-	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 8 ),
-	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 9 ),
-	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 10 ),
+	'testimonials' => $test_page( 'testimonials', 'Testimonials', $id, 7 ),
+	'contact_bar' => $test_page( 'contact-bar', 'Contact Bar', $id, 8 ),
+	'cta_banner'  => $test_page( 'cta-banner', 'CTA Banner', $id, 9 ),
+	'buttons'     => $test_page( 'buttons', 'Buttons', $id, 10 ),
+	'placeholder' => $test_page( 'placeholder', 'Placeholder', $id, 11 ),
 ];
 // Sections are what an editor adds to a page; parts are shared pieces that sections are built
 // from (Buttons is both: its own section, and the buttons inside Hero). In the test menu the
@@ -41,7 +42,7 @@ $component_pages = [
 // (/components/sections/, /components/parts/) that lists them.
 $sections_id = $test_page( 'sections', 'Sections', $id, 0 );
 $part_names = [ 'buttons', 'placeholder' ];
-$parts_id   = $test_page( 'parts', 'Parts', $id, 11 );
+$parts_id   = $test_page( 'parts', 'Parts', $id, 12 );
 // Site components (Navigation, Footer) are on every page of a real site and edited on their own
 // wp-admin pages, not added as sections. Each has a test page showing it around a little text,
 // under "Site" (/components/site/), which lists them as Parts lists the parts.
@@ -547,6 +548,50 @@ $sections_stats = [
 	$stats( '', [ 'eyebrow' => '', 'intro' => '', 'stats_buttons' => [], 'stats_figures' => array_map( fn( $f ) => array_merge( $f, [ 'text' => '' ] ), $stats_figures ) ] ),
 ];
 
+// ---------- Testimonials ----------
+// The photos are the card images (wide, tall, square), so the round crop is tested on every
+// shape; one quote has no photo, one no role, and one is long, to check the names still line up.
+$testimonial  = fn( $name, $extra = [] ) => array_merge( [
+	'quote' => 'They had everything set up before we arrived and packed away before the last guests left. We didn\'t have to think about it once.',
+	'name'  => $name,
+	'role'  => 'Events manager, Hay Festival',
+	'photo' => '',
+], $extra );
+$testimonials_quotes = [
+	$testimonial( 'Sam Carter', [ 'photo' => $card_images[0] ] ),
+	$testimonial( 'Priya Shah', [ 'photo' => $card_images[1], 'role' => 'Owner, The Walled Garden', 'quote' => 'Friendly, quick and exactly what we asked for.' ] ),
+	$testimonial( 'Alex Morgan', [ 'photo' => $card_images[2], 'role' => 'Director, Brecon Jazz', 'quote' => "A longer quote, to check that the names still line up across a row when one quote runs on.\nIt has a second paragraph too: a line break in the Quote box starts a new one." ] ),
+	$testimonial( 'Jo Evans', [ 'role' => '', 'quote' => 'No photo and no role: just the quote and a name.' ] ),
+	$testimonial( 'Chris Lloyd', [ 'photo' => $card_images[0], 'role' => 'Site lead, Green Man', 'quote' => 'We\'ve booked them for five years running.' ] ),
+];
+$testimonials = fn( $heading, $settings = [] ) => $section( 'testimonials', [
+	'eyebrow'             => 'What clients say',
+	'heading'             => $heading,
+	'intro'               => 'An optional intro under the heading, saying who the quotes are from.',
+	'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 3 ),
+	'testimonials_buttons' => [ $button( 'Read more reviews', 'outline' ) ],
+	'layout'              => 'grid',
+	'columns'             => '3',
+	'last_quote'          => 'column',
+	'quote_style'         => 'panel',
+	'alignment'           => 'left',
+], $settings );
+
+$sections_testimonials = [
+	$testimonials( 'Testimonials: grid, 3 columns, Panel', [ 'anchor' => 'testimonials' ] ),
+	$testimonials( 'Testimonials: grid, Plain, centred', [ 'quote_style' => 'plain', 'alignment' => 'centre', 'testimonials_buttons' => [ $button( 'Get a quote', 'solid' ), $button( 'Our work', 'text' ) ] ] ),
+	$testimonials( 'Testimonials: 2 columns, narrow, on Surface', [ 'columns' => '2', 'width' => 'narrow', 'background' => 'surface', 'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 4 ) ] ),
+	$testimonials( 'Testimonials: large, one quote', [ 'layout' => 'large', 'eyebrow' => '', 'intro' => '', 'testimonials_quotes' => [ $testimonials_quotes[0] ], 'testimonials_buttons' => [] ] ),
+	$testimonials( 'Testimonials: large, centred, on Brand', [ 'layout' => 'large', 'alignment' => 'centre', 'background' => 'brand', 'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 2 ) ] ),
+	$testimonials( 'Testimonials: large, Plain, wide, on Black', [ 'layout' => 'large', 'quote_style' => 'plain', 'width' => 'wide', 'background' => 'black', 'testimonials_quotes' => [ $testimonials_quotes[1] ] ] ),
+	$testimonials( 'Testimonials: grid on Accent', [ 'background' => 'accent', 'testimonials_quotes' => array_slice( $testimonials_quotes, 1, 3 ) ] ),
+	$testimonials( 'Testimonials: last quote fills the row, 4 quotes in 3 columns', [ 'intro' => 'With Last quote set to Fill the row, the fourth quote spans the whole second row.', 'last_quote' => 'fill', 'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 4 ), 'testimonials_buttons' => [] ] ),
+	$testimonials( 'Testimonials: last quote fills the row, 5 in 3 columns, Plain', [ 'intro' => 'The fifth quote spans the two columns left.', 'last_quote' => 'fill', 'quote_style' => 'plain', 'testimonials_quotes' => $testimonials_quotes, 'testimonials_buttons' => [] ] ),
+	$testimonials( 'Testimonials: full width on Black, six quotes', [ 'width' => 'full', 'background' => 'black', 'testimonials_quotes' => array_merge( $testimonials_quotes, [ $testimonials_quotes[1] ] ), 'testimonials_buttons' => [ $button( 'Main button', 'solid' ) ] ] ),
+	$testimonials( 'Testimonials: full width on Surface, wide content, centred', [ 'width' => 'full', 'content_width' => 'wide', 'background' => 'surface', 'alignment' => 'centre' ] ),
+	$testimonials( '', [ 'eyebrow' => '', 'intro' => '', 'testimonials_quotes' => array_slice( $testimonials_quotes, 0, 2 ), 'testimonials_buttons' => [] ] ),
+];
+
 $contact_detail  = fn( $type, $value, $label = '', $map_link = 0 ) => [
 	'type'     => $type,
 	'label'    => $label,
@@ -649,6 +694,7 @@ $rows = [
 	'media_text'  => $sections_media_text,
 	'accordion'   => $sections_accordion,
 	'stats'       => $sections_stats,
+	'testimonials' => $sections_testimonials,
 	'contact_bar' => $sections_contact_bar,
 	'cta_banner'  => $sections_cta_banner,
 	'buttons'     => $sections_buttons,
