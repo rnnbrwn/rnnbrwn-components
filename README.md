@@ -4,7 +4,7 @@ Shared layout system (Sass) and Astro components for every RNNBRWN site. Each co
 
 | | Where | Example |
 |---|---|---|
-| WordPress fields (ACF) | `rnnbrwn-themes/rnnbrwn-base/sections/components/` | `card-grid.php` → layout `card_grid` |
+| WordPress fields (ACF) | `wordpress/components/` here, installed as a must-use plugin | `card-grid.php` → layout `card_grid` |
 | Astro + Sass | `src/components/` here, listed in `src/registry.ts` | `CardGrid.astro` |
 
 In GraphQL each one is `PageSectionsSections<Name>Layout` on `page.pageSections.sections`.
@@ -82,7 +82,7 @@ rnnbrwn.xyz/components/example-site/ is a realistic page built from the componen
 1. Install: `npm install github:rnnbrwn/rnnbrwn-components#<version>` (while developing: `npm install ../../platform/rnnbrwn-components`, which links the local folder).
 2. `astro.config.mjs`: `import rnnbrwnComponents from '@rnnbrwn/components';` and add `rnnbrwnComponents()` to `integrations`.
 3. Global stylesheet: `@use 'rnnbrwn-global';` then set the site's palette (see below).
-4. WordPress (child theme `functions.php`): `add_filter('rnnbrwn_sections', fn () => ['components' => [...], 'pages' => 'all', 'background' => 'white']);`
+4. WordPress: add `"components": "v<version>"` to the site in `rnnbrwn-cms/sites.json` (the same tag as step 1) and deploy the CMS. Then in the child theme's `functions.php`: `add_filter('rnnbrwn_sections', fn () => ['components' => [...], 'pages' => 'all', 'background' => 'white']);`
 5. Query and render, listing the same components as step 4:
    ```astro
    ---
@@ -94,6 +94,23 @@ rnnbrwn.xyz/components/example-site/ is a realistic page built from the componen
      <main class="l-page"><Sections sections={data.page.pageSections.sections} cmsUrl={import.meta.env.GRAPHQL_URL} /></main>
    </body>
    ```
+
+## Versions and upgrading
+A tag covers both halves and the migrations to get there. Each site pins it twice: `"components"` in `rnnbrwn-cms/sites.json` (the WordPress half, copied to `wp-content/mu-plugins/rnnbrwn-components/` by the CMS deploy) and `package.json` (the Astro half). So a new version reaches one site at a time, and other sites keep their own. A site with no `components` key doesn't get the WordPress half.
+
+`astro build` stops with a plain message if the CMS's version (GraphQL `rnnbrwnComponents { version }`) isn't the site's. `astro dev` doesn't check. A failed build leaves the last good deploy live.
+
+**To upgrade one site, in this order:**
+1. Bump its `components` tag in `sites.json`.
+2. Deploy the CMS. Pushing `rnnbrwn-cms` redeploys every site, but the others keep their pins, so they're unaffected.
+3. Run any migration for that version on that site.
+4. Bump the site's `package.json` to the same tag (`npm install "github:rnnbrwn/rnnbrwn-components#vX.Y.Z"`) and deploy the frontend.
+
+Do steps 2 to 4 close together: until step 4, that site's builds fail on purpose, so new WordPress content won't appear on it.
+
+**To release a version:** set the same version in `package.json` and `wordpress/version.php`, run `npm run version` in `tests/` (it checks they match), then tag `vX.Y.Z` and push the tag.
+
+Locally, `local-setup.sh` mounts this working copy for every site, so WordPress and a linked site always use the same code.
 
 ## Colours: five backgrounds on every site, each site's own palette
 Every site has a **palette** of seven colours: an off-white and an off-black (never pure `#fff` or `#000`) and five colours. A site only sets its palette; the library builds everything else from it:
@@ -171,7 +188,7 @@ Brand counts as a dark background and Accent as a light one (for `--display-if-d
 6. On a card fill (`--color-card`), the primary and brand colours can fall just short of 4.5:1 (4.4:1 with some themes): use `--color-text` or `--color-muted` for text there, as Card Grid does for "Read more →" and card eyebrows.
 
 ## Adding a component
-1. `rnnbrwn-base/sections/components/<name>.php` returning `rs_layout(...)` (see `placeholder.php`).
+1. `wordpress/components/<name>.php` returning `rs_layout(...)` (see `placeholder.php`).
 2. `src/components/<Name>.astro` wrapped in `<Section>`, plus its entry in `src/registry.ts`.
 3. A test page and rows in `showcase/seed.php` (each component has its own page under "Components"), switch it on for rnnbrwn.xyz (theme filter + `ENABLED` in `src/lib/components.ts`), re-run the seed and check rnnbrwn.xyz/components/<name>/.
 

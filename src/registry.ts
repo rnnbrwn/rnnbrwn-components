@@ -1,5 +1,5 @@
 // Every component in the library. The key is its ACF layout name, matching
-// rnnbrwn-themes/rnnbrwn-base/sections/components/<name with dashes>.php;
+// wordpress/components/<name with dashes>.php;
 // `fields` is what to fetch from GraphQL, on top of the shared settings.
 import Accordion from './components/Accordion.astro';
 import Buttons from './components/Buttons.astro';

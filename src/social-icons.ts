@@ -1,5 +1,5 @@
 // Icons for Footer's social links: the choices in WordPress (the "Platform" dropdown in
-// rnnbrwn-base/sections/site/footer.php) must use the same keys. Each icon is the inside of a
+// wordpress/site/footer.php) must use the same keys. Each icon is the inside of a
 // 16×16 <svg>, filled with the text colour.
 //
 // Shapes from Bootstrap Icons 1.13.1 (https://icons.getbootstrap.com), MIT licence:

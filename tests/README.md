@@ -15,6 +15,7 @@ cd platform/rnnbrwn-components/tests && npm install && npm run all
 
 | Script | Checks |
 |---|---|
+| `version.mjs` | `wordpress/version.php` and `package.json` have the same version. No browser or site needed; part of the release steps |
 | `test-pages.mjs` | The component pages: the sidebar reaches every page (desktop, and on phones from the Menu button), each marked current with one `<h1>`; each component's page shows only its component (the Example Site, Navigation and Footer with the site's Navigation and Footer); the overview, Parts and Site pages list their pages; the toolbar switches change the component (background on it and `<body>`, so a White section on a black page becomes a panel; theme; 375px at Phone) and not the top bar, sidebar or page, theme and width carrying over to the next page; a token in "Built from" opens the Tokens page at its section, below the top bar; axe; Escape closes the phone menu; the test Navigation menu lists every page (Parts and Site with sub-links); full-width sections' lanes |
 | `navigation.mjs` | Navigation, on its preview page: dropdown sub-links (keyboard, hover and its grace delay, Escape, click outside, touch, no JavaScript, on screen, current page), full-screen menu on phones, page behind inert and scroll-locked, keyboard (Tab, Escape), closing, reduced motion, no JavaScript, axe scans |
 | `hero.mjs` | Hero: layout unchanged on every background and theme, photos fill and stay on screen, worst-case text contrast over photos, axe, alt text, buttons, lazy loading |

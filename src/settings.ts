@@ -1,5 +1,5 @@
 // The shared Settings tab every component has in WordPress (rs_settings() in
-// rnnbrwn-themes/rnnbrwn-base/sections/sections.php), the page's own settings, and the shapes of
+// wordpress/sections.php), the page's own settings, and the shapes of
 // the WordPress fields that several components share (links, images, buttons).
 
 // WPGraphQL returns dropdown (select) fields as a one-item list.
